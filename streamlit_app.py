@@ -5,19 +5,21 @@ from datetime import datetime, time
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 
-# Custom CSS to make the chatbot sidebar full height
+# Custom CSS to make the chatbot full height and adjust layout
 st.markdown("""
 <style>
-    section[data-testid="stSidebar"] {
-        width: 30% !important;
-        min-width: 30% !important;
-    }
-    section[data-testid="stSidebar"] > div {
-        height: 100vh;
+    .reportSection {
+        height: calc(100vh - 80px);  /* Adjust based on your header height */
         overflow-y: auto;
     }
-    .main > div {
-        padding-right: 1rem;
+    .chatSection {
+        height: calc(100vh - 80px);  /* Adjust based on your header height */
+        overflow-y: auto;
+        padding-left: 1rem;
+        border-left: 1px solid #e0e0e0;
+    }
+    .stButton > button {
+        width: 100%;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -26,12 +28,20 @@ st.markdown("""
 def main():
     st.title("AI-Enhanced Maritime Reporting System")
 
-    # Create a sidebar for the chatbot
-    with st.sidebar:
-        create_chatbot()
+    # Create two columns: one for the form (70%) and one for the chatbot (30%)
+    col1, col2 = st.columns([0.7, 0.3])
 
-    # Main content area for the form
-    create_form()
+    with col1:
+        with st.container():
+            st.markdown('<div class="reportSection">', unsafe_allow_html=True)
+            create_form()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with col2:
+        with st.container():
+            st.markdown('<div class="chatSection">', unsafe_allow_html=True)
+            create_chatbot()
+            st.markdown('</div>', unsafe_allow_html=True)
 
 def create_form():
     st.header("New Noon Report")
