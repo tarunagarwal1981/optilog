@@ -4,18 +4,33 @@ import pandas as pd
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 
+# Custom CSS to make the chatbot sidebar full height
+st.markdown("""
+<style>
+    section[data-testid="stSidebar"] {
+        width: 30% !important;
+        min-width: 30% !important;
+    }
+    section[data-testid="stSidebar"] > div {
+        height: 100vh;
+        overflow-y: auto;
+    }
+    .main > div {
+        padding-right: 1rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Define the main function
 def main():
     st.title("AI-Enhanced Maritime Reporting System")
 
-    # Create two columns: one for the form (70%) and one for the chatbot (30%)
-    col1, col2 = st.columns([0.7, 0.3])
-
-    with col1:
-        create_form()
-
-    with col2:
+    # Create a sidebar for the chatbot
+    with st.sidebar:
         create_chatbot()
+
+    # Main content area for the form
+    create_form()
 
 def create_form():
     st.header("New Noon Report")
