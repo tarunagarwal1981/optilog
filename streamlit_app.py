@@ -33,6 +33,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
 st.markdown("""
     <style>
     .stNumberInput input {
@@ -42,8 +43,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
     with st.expander("Fuel Consumption", expanded=True):
-        fuel_types = ["LFO", "MGO", "LNG"]
-        
         st.subheader("Main Engines")
         col1, col2, col3 = st.columns(3)
         with col1:
