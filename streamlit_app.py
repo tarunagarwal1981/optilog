@@ -9,25 +9,37 @@ st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 st.markdown("""
 <style>
     .reportSection {
-        height: calc(100vh - 80px);  /* Adjust based on your header height */
+        height: 100vh;
         overflow-y: auto;
+        padding-top: 0;
+        padding-bottom: 3rem;
     }
     .chatSection {
-        height: calc(100vh - 80px);  /* Adjust based on your header height */
+        height: 100vh;
         overflow-y: auto;
         padding-left: 1rem;
+        padding-top: 0;
         border-left: 1px solid #e0e0e0;
     }
     .stButton > button {
         width: 100%;
+    }
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        max-width: 100%;
+    }
+    h1 {
+        margin-top: 0;
+    }
+    .stAlert {
+        margin-top: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Define the main function
 def main():
-    st.title("AI-Enhanced Maritime Reporting System")
-
     # Create two columns: one for the form (70%) and one for the chatbot (30%)
     col1, col2 = st.columns([0.7, 0.3])
 
@@ -44,6 +56,7 @@ def main():
             st.markdown('</div>', unsafe_allow_html=True)
 
 def create_form():
+    st.title("AI-Enhanced Maritime Reporting System")
     st.header("New Noon Report")
     
     # Create form fields
