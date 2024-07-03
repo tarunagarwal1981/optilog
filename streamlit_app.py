@@ -143,25 +143,7 @@ def create_form():
             lon_dir = st.selectbox("Longitude Direction", ["East", "West"])
 
     with st.expander("Cargo", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            cargo_weight = st.number_input("Cargo Weight (mt)", min_value=0.0, step=0.1)
-        with col2:
-            cargo_volume = st.number_input("Cargo Volume (m³)", min_value=0.0, step=0.1)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            passengers = st.number_input("Number of Passengers", min_value=0, step=1)
-        with col2:
-            reefer_20_chilled = st.number_input("Reefer 20 ft. Chilled", min_value=0, step=1)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            reefer_40_chilled = st.number_input("Reefer 40 ft. Chilled", min_value=0, step=1)
-        with col2:
-            reefer_20_frozen = st.number_input("Reefer 20 ft. Frozen", min_value=0, step=1)
-        
-        reefer_40_frozen = st.number_input("Reefer 40 ft. Frozen", min_value=0, step=1)
+        cargo_weight = st.number_input("Cargo Weight (mt)", min_value=0.0, step=0.1)
 
     with st.expander("Fuel Consumption", expanded=True):
         fuel_types = ["HFO", "LFO", "MGO", "MDO", "LPG Propane", "LPG Butane", "LNG", "Methanol", "Ethanol", "Other"]
