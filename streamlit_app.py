@@ -33,6 +33,104 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+# Add this CSS to make input boxes smaller
+    st.markdown("""
+    <style>
+    .stNumberInput input {
+        width: 100px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    with st.expander("Fuel Consumption", expanded=True):
+        fuel_types = ["LFO", "MGO", "LNG"]
+        
+        st.subheader("Main Engines")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("ME LFO (mt)", min_value=0.0, step=0.1, key="me_lfo", format="%.1f")
+        with col2:
+            st.number_input("ME MGO (mt)", min_value=0.0, step=0.1, key="me_mgo", format="%.1f")
+        with col3:
+            st.number_input("ME LNG (mt)", min_value=0.0, step=0.1, key="me_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("ME Other (mt)", min_value=0.0, step=0.1, key="me_other", format="%.1f")
+        with col2:
+            st.text_input("ME Other Fuel Type", key="me_other_type")
+        
+        st.subheader("Auxiliary Engines")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("AE LFO (mt)", min_value=0.0, step=0.1, key="ae_lfo", format="%.1f")
+        with col2:
+            st.number_input("AE MGO (mt)", min_value=0.0, step=0.1, key="ae_mgo", format="%.1f")
+        with col3:
+            st.number_input("AE LNG (mt)", min_value=0.0, step=0.1, key="ae_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("AE Other (mt)", min_value=0.0, step=0.1, key="ae_other", format="%.1f")
+        with col2:
+            st.text_input("AE Other Fuel Type", key="ae_other_type")
+        
+        st.subheader("Boilers")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("Boiler LFO (mt)", min_value=0.0, step=0.1, key="boiler_lfo", format="%.1f")
+        with col2:
+            st.number_input("Boiler MGO (mt)", min_value=0.0, step=0.1, key="boiler_mgo", format="%.1f")
+        with col3:
+            st.number_input("Boiler LNG (mt)", min_value=0.0, step=0.1, key="boiler_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("Boiler Other (mt)", min_value=0.0, step=0.1, key="boiler_other", format="%.1f")
+        with col2:
+            st.text_input("Boiler Other Fuel Type", key="boiler_other_type")
+
+    with st.expander("Remaining on Board (ROB)", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("LFO ROB (mt)", min_value=0.0, step=0.1, key="rob_lfo", format="%.1f")
+        with col2:
+            st.number_input("MGO ROB (mt)", min_value=0.0, step=0.1, key="rob_mgo", format="%.1f")
+        with col3:
+            st.number_input("LNG ROB (mt)", min_value=0.0, step=0.1, key="rob_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("Other ROB (mt)", min_value=0.0, step=0.1, key="rob_other", format="%.1f")
+        with col2:
+            st.text_input("Other Fuel Type ROB", key="rob_other_type")
+        
+        st.number_input("Total Fuel ROB (mt)", min_value=0.0, step=0.1, key="total_rob", format="%.1f")
+
+    with st.expander("Fuel Allocation", expanded=True):
+        st.subheader("Cargo Heating")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("Cargo Heating LFO (mt)", min_value=0.0, step=0.1, key="cargo_heating_lfo", format="%.1f")
+        with col2:
+            st.number_input("Cargo Heating MGO (mt)", min_value=0.0, step=0.1, key="cargo_heating_mgo", format="%.1f")
+        with col3:
+            st.number_input("Cargo Heating LNG (mt)", min_value=0.0, step=0.1, key="cargo_heating_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("Cargo Heating Other (mt)", min_value=0.0, step=0.1, key="cargo_heating_other", format="%.1f")
+        with col2:
+            st.text_input("Cargo Heating Other Fuel Type", key="cargo_heating_other_type")
+        
+        st.subheader("Dynamic Positioning (DP)")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.number_input("DP LFO (mt)", min_value=0.0, step=0.1, key="dp_lfo", format="%.1f")
+        with col2:
+            st.number_input("DP MGO (mt)", min_value=0.0, step=0.1, key="dp_mgo", format="%.1f")
+        with col3:
+            st.number_input("DP LNG (mt)", min_value=0.0, step=0.1, key="dp_lng", format="%.1f")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.number_input("DP Other (mt)", min_value=0.0, step=0.1, key="dp_other", format="%.1f")
+        with col2:
+            st.text_input("DP Other Fuel Type", key="dp_other_type")
 
 def generate_random_vessel_name():
     adjectives = ['Swift', 'Majestic', 'Brave', 'Stellar', 'Royal']
