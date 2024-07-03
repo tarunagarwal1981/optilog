@@ -5,35 +5,36 @@ from datetime import datetime, time
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 
-# Custom CSS to make the chatbot full height and adjust layout
+# Custom CSS to remove extra space and adjust layout
 st.markdown("""
 <style>
-    .reportSection {
+    .reportSection, .chatSection {
         height: 100vh;
         overflow-y: auto;
-        padding-top: 0;
-        padding-bottom: 3rem;
     }
     .chatSection {
-        height: 100vh;
-        overflow-y: auto;
         padding-left: 1rem;
-        padding-top: 0;
         border-left: 1px solid #e0e0e0;
     }
     .stButton > button {
         width: 100%;
     }
+    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div {
+        padding-top: 0rem;
+    }
     .main .block-container {
-        padding-top: 1rem;
+        padding-top: 0rem;
         padding-bottom: 1rem;
         max-width: 100%;
     }
-    h1 {
+    h1, h2, h3 {
         margin-top: 0;
     }
     .stAlert {
         margin-top: 1rem;
+    }
+    header {
+        display: none;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -44,20 +45,18 @@ def main():
     col1, col2 = st.columns([0.7, 0.3])
 
     with col1:
-        with st.container():
-            st.markdown('<div class="reportSection">', unsafe_allow_html=True)
-            create_form()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="reportSection">', unsafe_allow_html=True)
+        create_form()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        with st.container():
-            st.markdown('<div class="chatSection">', unsafe_allow_html=True)
-            create_chatbot()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chatSection">', unsafe_allow_html=True)
+        create_chatbot()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def create_form():
     st.title("AI-Enhanced Maritime Reporting System")
-    st.header("New Noon Report")
+    st.subheader("New Noon Report")
     
     # Create form fields
     col1, col2 = st.columns(2)
@@ -143,7 +142,7 @@ def create_form():
         st.success("Report submitted successfully!")
 
 def create_chatbot():
-    st.header("AI Assistant")
+    st.subheader("AI Assistant")
     
     # Initialize chat history
     if "messages" not in st.session_state:
