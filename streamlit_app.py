@@ -5,35 +5,22 @@ from datetime import datetime, time
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 
-# Custom CSS to adjust layout and scrolling behavior
+# Custom CSS to adjust layout
 st.markdown("""
 <style>
     .reportSection {
-        height: calc(100vh - 2rem);
-        overflow-y: auto;
         padding-right: 1rem;
     }
     .chatSection {
-        height: calc(100vh - 2rem);
-        overflow-y: hidden;
         padding-left: 1rem;
         border-left: 1px solid #e0e0e0;
-        display: flex;
-        flex-direction: column;
-    }
-    .chatMessages {
-        flex-grow: 1;
-        overflow-y: auto;
     }
     .stButton > button {
         width: 100%;
     }
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div {
-        padding-top: 0rem;
-    }
     .main .block-container {
-        padding-top: 0rem;
-        padding-bottom: 0rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
         max-width: 100%;
     }
     h1, h2, h3 {
@@ -42,22 +29,13 @@ st.markdown("""
     .stAlert {
         margin-top: 1rem;
     }
-    header {
-        display: none;
-    }
-    .reportSection::-webkit-scrollbar, .chatMessages::-webkit-scrollbar {
-        width: 5px;
-        background-color: #F5F5F5;
-    }
-    .reportSection::-webkit-scrollbar-thumb, .chatMessages::-webkit-scrollbar-thumb {
-        background-color: #888;
-        border-radius: 5px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
 # Define the main function
 def main():
+    st.title("AI-Enhanced Maritime Reporting System")
+    
     # Create two columns: one for the form (70%) and one for the chatbot (30%)
     col1, col2 = st.columns([0.7, 0.3])
 
@@ -72,8 +50,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def create_form():
-    st.title("AI-Enhanced Maritime Reporting System")
-    st.subheader("New Noon Report")
+    st.header("New Noon Report")
     
     # Create form fields
     col1, col2 = st.columns(2)
@@ -159,18 +136,16 @@ def create_form():
         st.success("Report submitted successfully!")
 
 def create_chatbot():
-    st.subheader("AI Assistant")
+    st.header("AI Assistant")
     
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
     # Display chat messages from history on app rerun
-    st.markdown('<div class="chatMessages">', unsafe_allow_html=True)
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # React to user input
     if prompt := st.chat_input("How can I help you with your report?"):
