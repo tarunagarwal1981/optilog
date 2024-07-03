@@ -33,8 +33,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# Add this CSS to make input boxes smaller
-    st.markdown("""
+st.markdown("""
     <style>
     .stNumberInput input {
         width: 100px;
