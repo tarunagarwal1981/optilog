@@ -146,7 +146,7 @@ def create_form():
         cargo_weight = st.number_input("Cargo Weight (mt)", min_value=0.0, step=0.1)
 
     with st.expander("Fuel Consumption", expanded=True):
-        fuel_types = ["HFO", "LFO", "MGO", "MDO", "LPG Propane", "LPG Butane", "LNG", "Methanol", "Ethanol", "Other"]
+        fuel_types = ["LFO", "MGO", "LNG", "Other"]
         
         st.subheader("Main Engines")
         for fuel in fuel_types:
