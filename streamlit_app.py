@@ -36,6 +36,12 @@ st.markdown("""
     header {
         display: none;
     }
+    .css-1lcbmhc e1fqkh3o1 {
+        padding-top: 0rem;
+    }
+    .css-1d391kg e1fqkh3o1 {
+        padding-top: 0rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
