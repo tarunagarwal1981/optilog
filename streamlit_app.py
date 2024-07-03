@@ -5,16 +5,25 @@ from datetime import datetime, time
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
 
-# Custom CSS to remove extra space and adjust layout
+# Custom CSS to adjust layout and scrolling behavior
 st.markdown("""
 <style>
-    .reportSection, .chatSection {
-        height: 100vh;
+    .reportSection {
+        height: calc(100vh - 2rem);
         overflow-y: auto;
+        padding-right: 1rem;
     }
     .chatSection {
+        height: calc(100vh - 2rem);
+        overflow-y: hidden;
         padding-left: 1rem;
         border-left: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+    }
+    .chatMessages {
+        flex-grow: 1;
+        overflow-y: auto;
     }
     .stButton > button {
         width: 100%;
@@ -24,7 +33,7 @@ st.markdown("""
     }
     .main .block-container {
         padding-top: 0rem;
-        padding-bottom: 1rem;
+        padding-bottom: 0rem;
         max-width: 100%;
     }
     h1, h2, h3 {
@@ -36,11 +45,13 @@ st.markdown("""
     header {
         display: none;
     }
-    .css-1lcbmhc e1fqkh3o1 {
-        padding-top: 0rem;
+    .reportSection::-webkit-scrollbar, .chatMessages::-webkit-scrollbar {
+        width: 5px;
+        background-color: #F5F5F5;
     }
-    .css-1d391kg e1fqkh3o1 {
-        padding-top: 0rem;
+    .reportSection::-webkit-scrollbar-thumb, .chatMessages::-webkit-scrollbar-thumb {
+        background-color: #888;
+        border-radius: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -155,9 +166,11 @@ def create_chatbot():
         st.session_state.messages = []
 
     # Display chat messages from history on app rerun
+    st.markdown('<div class="chatMessages">', unsafe_allow_html=True)
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # React to user input
     if prompt := st.chat_input("How can I help you with your report?"):
