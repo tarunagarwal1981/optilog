@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from streamlit_chat import message
 
 # Set page config
 st.set_page_config(layout="wide", page_title="Maritime Reporting System")
@@ -82,7 +81,7 @@ def create_chatbot():
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         # Generate AI response (placeholder)
-        response = f"AI: Thank you for your question. Here's a placeholder response to: {prompt}"
+        response = f"Thank you for your question. Here's a placeholder response to: {prompt}"
         
         # Display AI response in chat message container
         with st.chat_message("assistant"):
