@@ -130,12 +130,12 @@ When suggesting follow-up reports, carefully consider the history of the last 3-
 
 When a user agrees to create a specific report, inform them that the form will appear on the left side of the page with the relevant sections for that report type.
 
-Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page."
+Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page
+will now appear on the left side of the page."
 
 Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
 
-For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value
-ranges.
+For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
 """
 
 def generate_random_vessel_name():
@@ -211,8 +211,8 @@ def create_form(report_type):
     report_structure = REPORT_STRUCTURES.get(report_type, [])
     
     for section in report_structure:
-        with st.expander(section, expanded=False):
-            fields = SECTION_FIELDS.get(section, {})
+        with st.expander(section, expanded=True):
+            fields = SECTION_FIELDS.get(section, [])
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
