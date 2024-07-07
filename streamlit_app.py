@@ -135,6 +135,7 @@ Remember to provide appropriate reminders and follow-up suggestions based on the
 For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
 """
 
+# Utility functions
 def generate_random_vessel_name():
     adjectives = ['Swift', 'Majestic', 'Brave', 'Stellar', 'Royal']
     nouns = ['Voyager', 'Explorer', 'Mariner', 'Adventurer', 'Navigator']
@@ -179,6 +180,33 @@ def get_field_prompt(field):
     response = get_ai_response(prompt, [])
     return response
 
+def is_valid_report_sequence(last_reports, new_report):
+    if not last_reports:
+        return True
+    
+    last_report = last_reports[-1]
+    
+    sequence_rules = {
+        "Arrival STS": ["Departure STS"],
+        "Begin of offhire": ["End of offhire"],
+        "Begin fuel change over": ["End fuel change over"],
+        "Begin canal passage": ["End canal passage"],
+        "Begin Anchoring/Drifting": ["End Anchoring/Drifting"],
+        "Begin of deviation": ["End of deviation"],
+        "Departure": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "Departure STS": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "End Anchoring/Drifting": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+    }
+    
+    if last_report in sequence_rules:
+        return new_report in sequence_rules[last_report] or new_report.startswith("Noon")
+    
+    if new_report.startswith("Noon"):
+        return True
+    
+    return new_report not in [item for sublist in sequence_rules.values() for item in sublist]
+
+# Main application functions
 def create_fields(fields, prefix):
     for field in fields:
         col1, col2 = st.columns([3, 1])
@@ -247,20 +275,6 @@ def create_collapsible_history_panel():
         st.session_state.report_history = [report for report in updated_history if report != "None"]
 
         st.markdown('</div>', unsafe_allow_html=True)
-
-import streamlit as st
-import openai
-from datetime import datetime
-import pytz
-import os
-import random
-import string
-
-# ... (keep all the imports and initial setup)
-
-# ... (keep all the constant definitions like REPORT_TYPES, REPORT_STRUCTURES, SECTION_FIELDS, and TRAINING_DATA)
-
-# ... (keep all the helper functions like generate_random_vessel_name, generate_random_imo, get_ai_response, get_field_prompt, create_fields, create_form, create_collapsible_history_panel, and is_valid_report_sequence)
 
 def create_chatbot(last_reports):
     st.header("AI Assistant")
