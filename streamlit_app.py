@@ -76,11 +76,8 @@ REPORT_TYPES = [
 ]
 
 # Define report structures
-REPORT_STRUCTURES = {
-    "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Weather", "Draft"],
-    "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Weather", "Draft"],
-    # Add structures for other report types here
-}
+REPORT_STRUCTURES = {report_type: ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Weather", "Draft"] for report_type in REPORT_TYPES}
+REPORT_STRUCTURES["ETA update"] = ["Vessel Data", "Voyage Data", "Position"]
 
 # Define section fields
 SECTION_FIELDS = {
@@ -240,6 +237,10 @@ def create_form(report_type):
     report_structure = REPORT_STRUCTURES.get(report_type, [])
     st.write(f"Debug: Report structure for {report_type}: {report_structure}")  # Debug output
     
+    if not report_structure:
+        st.error(f"No structure defined for report type: {report_type}")
+        return False
+    
     for section in report_structure:
         with st.expander(section, expanded=True):
             st.subheader(section)
@@ -250,8 +251,10 @@ def create_form(report_type):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
                     create_fields(subfields, f"{report_type}_{section}_{subsection}")
-            else:
+            elif isinstance(fields, list):
                 create_fields(fields, f"{report_type}_{section}")
+            else:
+                st.error(f"Unexpected field type for section {section}: {type(fields)}")
 
     if st.button("Submit Report"):
         if validate_report(report_type):
@@ -260,6 +263,7 @@ def create_form(report_type):
         else:
             st.error("Please correct the errors in the report before submitting.")
     return False
+
     
 def validate_report(report_type):
     # Add your validation logic here
@@ -330,7 +334,6 @@ def create_chatbot(last_reports):
             if f"Agreed. The form for {report_type}" in response:
                 if is_valid_report_sequence(last_reports, report_type):
                     st.session_state.current_report_type = report_type
-                    st.session_state.show_form = True
                     break
                 else:
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
@@ -396,6 +399,5 @@ def main():
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
-
 if __name__ == "__main__":
     main()
