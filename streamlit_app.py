@@ -297,9 +297,9 @@ def create_chatbot(last_reports):
                 if is_valid_report_sequence(last_reports, report_type):
                     st.session_state.current_report_type = report_type
                     st.session_state.show_form = True
+                    st.session_state.new_report_requested = True
                     st.write(f"Debug: Setting show_form to True for {report_type}")  # Debug print
-                    st.experimental_rerun()
-                    return
+                    break
                 else:
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
         
@@ -316,8 +316,11 @@ def main():
     
     if "current_report_type" not in st.session_state:
         st.session_state.current_report_type = None
+    
+    if "new_report_requested" not in st.session_state:
+        st.session_state.new_report_requested = False
 
-    st.write(f"Debug: Initial state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}")  # Debug print
+    st.write(f"Debug: Initial state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}, new_report_requested: {st.session_state.new_report_requested}")  # Debug print
 
     # Create a two-column layout
     col1, col2 = st.columns([0.7, 0.3])
@@ -328,8 +331,13 @@ def main():
             st.write(f"Debug: Showing form for {st.session_state.current_report_type}")  # Debug print
             if create_form(st.session_state.current_report_type):
                 st.session_state.show_form = False
+                st.session_state.current_report_type = None
                 st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
                 st.experimental_rerun()
+        elif st.session_state.new_report_requested:
+            st.write(f"Debug: New report requested for {st.session_state.current_report_type}")
+            st.session_state.new_report_requested = False
+            st.experimental_rerun()
         else:
             st.write("Please use the AI Assistant to initiate a report.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -344,11 +352,12 @@ def main():
             st.session_state.show_form = False
             st.session_state.current_report_type = None
             st.session_state.report_history = []
+            st.session_state.new_report_requested = False
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.write(f"Debug: Final state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}")  # Debug print
+    st.write(f"Debug: Final state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}, new_report_requested: {st.session_state.new_report_requested}")  # Debug print
 
 if __name__ == "__main__":
     main()
