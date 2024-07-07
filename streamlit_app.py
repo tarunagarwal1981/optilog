@@ -68,10 +68,44 @@ REPORT_TYPES = [
 
 REPORT_STRUCTURES = {
     # Define structures for each report type
+    "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
+    "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
+    # Define other report structures similarly...
 }
 
 SECTION_FIELDS = {
     # Define section fields for each report type
+    "Vessel Data": ["Vessel Name", "Vessel IMO"],
+    "Voyage Data": ["Local Date", "Local Time", "UTC Offset", "Voyage ID", "Segment ID", "From Port", "To Port"],
+    "Event Data": ["Event Type", "Time Elapsed (hours)", "Sailing Time (hours)", "Anchor Time (hours)", "DP Time (hours)", "Ice Time (hours)", "Maneuvering (hours)", "Loading/Unloading (hours)", "Drifting (hours)"],
+    "Position": ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"],
+    "Cargo": ["Cargo Weight (mt)"],
+    "Fuel Consumption": [
+        "ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)", "ME Other Fuel Type",
+        "AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)", "AE Other Fuel Type",
+        "Boiler LFO (mt)", "Boiler MGO (mt)", "Boiler LNG (mt)", "Boiler Other (mt)", "Boiler Other Fuel Type"
+    ],
+    "ROB": ["LFO ROB (mt)", "MGO ROB (mt)", "LNG ROB (mt)", "Other ROB (mt)", "Other Fuel Type ROB", "Total Fuel ROB (mt)"],
+    "Fuel Allocation": [
+        "Cargo Heating LFO (mt)", "Cargo Heating MGO (mt)", "Cargo Heating LNG (mt)", "Cargo Heating Other (mt)", "Cargo Heating Other Fuel Type",
+        "DP LFO (mt)", "DP MGO (mt)", "DP LNG (mt)", "DP Other (mt)", "DP Other Fuel Type"
+    ],
+    "Machinery": [
+        "ME Load (kW)", "ME Load Percentage (%)", "ME Speed (RPM)", "ME Propeller Pitch (m)", "ME Propeller Pitch Ratio", "ME Shaft Generator Power (kW)", "ME Charge Air Inlet Temp (°C)", "ME Scav. Air Pressure (bar)", "ME SFOC (g/kWh)", "ME SFOC ISO Corrected (g/kWh)"
+    ],
+    "Auxiliary Engines": [
+        "AE1 Load (kW)", "AE1 Charge Air Inlet Temp (°C)", "AE1 Charge Air Pressure (bar)", "AE1 SFOC (g/kWh)", "AE1 SFOC ISO Corrected (g/kWh)",
+        "AE2 Load (kW)", "AE2 Charge Air Inlet Temp (°C)", "AE2 Charge Air Pressure (bar)", "AE2 SFOC (g/kWh)", "AE2 SFOC ISO Corrected (g/kWh)",
+        "AE3 Load (kW)", "AE3 Charge Air Inlet Temp (°C)", "AE3 Charge Air Pressure (bar)", "AE3 SFOC (g/kWh)", "AE3 SFOC ISO Corrected (g/kWh)"
+    ],
+    "Weather": [
+        "Wind Direction (degrees)", "Wind Speed (knots)", "Wind Force (Beaufort)",
+        "Sea State Direction (degrees)", "Sea State Force (Douglas scale)", "Sea State Period (seconds)",
+        "Swell Direction (degrees)", "Swell Height (meters)", "Swell Period (seconds)",
+        "Current Direction (degrees)", "Current Speed (knots)",
+        "Air Temperature (°C)", "Sea Temperature (°C)"
+    ],
+    "Draft": ["Actual Forward Draft (m)", "Actual Aft Draft (m)", "Displacement (mt)", "Water Depth (m)"]
 }
 
 # Prepare the training data as a string
@@ -100,7 +134,8 @@ Provide concise and helpful guidance throughout the report creation process. If 
 
 Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
 
-For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
+For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value
+ranges.
 """
 
 def generate_random_vessel_name():
@@ -183,7 +218,7 @@ def create_form(report_type):
                     st.subheader(subsection)
                     create_fields(subfields, f"{report_type}_{section}_{subsection}")
             else:
-                                create_fields(fields, f"{report_type}_{section}")
+                create_fields(fields, f"{report_type}_{section}")
 
     if st.button("Submit Report"):
         st.success(f"{report_type} submitted successfully!")
@@ -308,4 +343,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
