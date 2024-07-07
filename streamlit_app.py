@@ -297,8 +297,9 @@ def create_chatbot(last_reports):
                 if is_valid_report_sequence(last_reports, report_type):
                     st.session_state.current_report_type = report_type
                     st.session_state.show_form = True
-                    st.experimental_rerun()  # Force a rerun to update the UI
-                    return  # Exit the function to prevent multiple reruns
+                    st.write(f"Debug: Setting show_form to True for {report_type}")  # Debug print
+                    st.experimental_rerun()
+                    return
                 else:
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
         
@@ -316,6 +317,8 @@ def main():
     if "current_report_type" not in st.session_state:
         st.session_state.current_report_type = None
 
+    st.write(f"Debug: Initial state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}")  # Debug print
+
     # Create a two-column layout
     col1, col2 = st.columns([0.7, 0.3])
 
@@ -329,7 +332,6 @@ def main():
                 st.experimental_rerun()
         else:
             st.write("Please use the AI Assistant to initiate a report.")
-            st.write(f"Debug: show_form = {st.session_state.show_form}, current_report_type = {st.session_state.current_report_type}")  # Debug print
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
@@ -345,6 +347,8 @@ def main():
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
+
+    st.write(f"Debug: Final state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}")  # Debug print
 
 if __name__ == "__main__":
     main()
