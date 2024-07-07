@@ -199,37 +199,40 @@ def get_ai_response(user_input, last_reports):
         return f"I'm sorry, but I encountered an error while processing your request: {str(e)}. Please try again later."
 
 def create_fields(fields, prefix):
-    for field in fields:
-        field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
-        
-        # Add a short prompt above the field
-        st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
-        
-        if field == "Vessel Name":
-            st.text_input(field, value=generate_random_vessel_name(), key=field_key)
-        elif field == "Vessel IMO":
-            st.text_input(field, value=generate_random_imo(), key=field_key)
-        elif "Date" in field:
-            st.date_input(field, key=field_key)
-        elif "Time" in field:
-            st.time_input(field, key=field_key)
-        elif field in VALIDATION_RULES:
-            min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
-            value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
-            if value < min_val or value > max_val:
-                st.warning(f"{field} should be between {min_val} and {max_val}")
-        elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
-            st.number_input(field, key=field_key)
-        elif "Direction" in field and "degrees" not in field:
-            st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
-        else:
-            st.text_input(field, key=field_key)
-        
-        # Add specific validation for Main Engine consumption
-        if field.startswith("ME ") and field.endswith(" (mt)"):
-            value = st.session_state.get(field_key, 0)
-            if value > 15:
-                st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
+    cols = st.columns(4)  # Create 4 columns
+    for i, field in enumerate(fields):
+        with cols[i % 4]:  # This will cycle through the columns
+            field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
+            
+            # Add a short prompt above the field
+            st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
+            
+            if field == "Vessel Name":
+                st.text_input(field, value=generate_random_vessel_name(), key=field_key)
+            elif field == "Vessel IMO":
+                st.text_input(field, value=generate_random_imo(), key=field_key)
+            elif "Date" in field:
+                st.date_input(field, key=field_key)
+            elif "Time" in field:
+                st.time_input(field, key=field_key)
+            elif field in VALIDATION_RULES:
+                min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
+                value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
+                if value < min_val or value > max_val:
+                    st.warning(f"{field} should be between {min_val} and {max_val}")
+            elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
+                st.number_input(field, key=field_key)
+            elif "Direction" in field and "degrees" not in field:
+                st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
+            else:
+                st.text_input(field, key=field_key)
+            
+            # Add specific validation for Main Engine consumption
+            if field.startswith("ME ") and field.endswith(" (mt)"):
+                value = st.session_state.get(field_key, 0)
+                if value > 15:
+                    st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
+
 
 def create_form(report_type):
     st.header(f"New {report_type}")
@@ -241,7 +244,7 @@ def create_form(report_type):
         return False
     
     for section in report_structure:
-        with st.expander(section, expanded=True):
+        with st.expander(section, expanded=False):  # Set expanded to False to collapse by default
             st.subheader(section)
             fields = SECTION_FIELDS.get(section, {})
             
