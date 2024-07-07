@@ -1,41 +1,97 @@
 import streamlit as st
-import pandas as pd
+import openai
 from datetime import datetime, time
+import pytz
+import json
+import os
+import re
 import random
 import string
 
 # Set page config
-st.set_page_config(layout="wide", page_title="Maritime Reporting System")
+st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
 
-# Custom CSS to adjust layout and make input boxes smaller
+# Custom CSS for compact layout and history panel
 st.markdown("""
 <style>
-    .reportSection {
-        padding-right: 1rem;
+    .reportSection { padding-right: 1rem; }
+    .chatSection { padding-left: 1rem; border-left: 1px solid #e0e0e0; }
+    .stButton > button { width: 100%; }
+    .main .block-container { padding-top: 1rem; padding-bottom: 1rem; max-width: 100%; }
+    h1, h2, h3 { margin-top: 0; font-size: 1.2em; }
+    .stAlert { margin-top: 1rem; }
+    .stNumberInput, .stTextInput, .stSelectbox { 
+        padding-bottom: 0.5rem !important; 
     }
-    .chatSection {
-        padding-left: 1rem;
-        border-left: 1px solid #e0e0e0;
+    .stNumberInput input, .stTextInput input, .stSelectbox select {
+        padding: 0.3rem !important;
+        font-size: 0.9em !important;
     }
-    .stButton > button {
-        width: 100%;
+    .stExpander { 
+        border: none !important; 
+        box-shadow: none !important;
+        margin-bottom: 0.5rem !important;
     }
-    .main .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-        max-width: 100%;
+    .history-panel {
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        max-width: 300px;
     }
-    h1, h2, h3 {
+    .history-panel h3 {
         margin-top: 0;
+        margin-bottom: 10px;
     }
-    .stAlert {
-        margin-top: 1rem;
-    }
-    .stNumberInput input {
-        width: 100px;
+    .history-select {
+        margin-bottom: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Set up OpenAI API key
+try:
+    openai.api_key = st.secrets["OPENAI_API_KEY"]
+except KeyError:
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+
+if not openai.api_key:
+    st.error("OpenAI API key not found. Please set it in Streamlit secrets or as an environment variable.")
+    st.stop()
+
+# Define report types, structures, and fields (as before)
+REPORT_TYPES = [...]
+REPORT_STRUCTURES = {...}
+SECTION_FIELDS = {...}
+
+# Prepare the training data as a string
+TRAINING_DATA = f"""
+You are an AI assistant for an advanced maritime reporting system, with the knowledge and experience of a seasoned maritime seafarer. Your role is to guide users through creating various types of maritime reports, ensuring compliance with industry standards and regulations while maintaining a logical sequence of events. 
+Keep your responses as short and crisp and easy to understand as possible. While suggesting the reports just suggest the name of the reports not their explanations.
+Valid report types: {', '.join(REPORT_TYPES)}
+
+Key features:
+1. Error reduction and data completion assistance
+2. Insights generation based on reported data
+3. Streamlined reporting process
+4. Enhanced accuracy in maritime operational reporting
+
+When suggesting follow-up reports, carefully consider the history of the last 3-4 reports and the logical sequence of maritime operations. Only suggest reports from the provided list that make sense given the current context and previous reports. For example:
+
+1. An "Arrival STS" report must precede a "Departure STS" report.
+2. "Begin of sea passage" should follow a departure-type report (e.g., "Departure", "Departure STS", "End Anchoring/Drifting").
+3. "Noon" reports are regular and can follow most report types during a voyage.
+4. "Begin" type reports (e.g., "Begin of offhire", "Begin fuel change over") must be followed by their corresponding "End" reports before suggesting unrelated reports.
+5. If "Begin" report is not there then "End" report should not be suggested.
+
+When a user agrees to create a specific report, inform them that the form will appear on the left side of the page with the relevant sections for that report type.
+
+Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page."
+
+Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
+
+For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
+"""
 
 def generate_random_vessel_name():
     adjectives = ['Swift', 'Majestic', 'Brave', 'Stellar', 'Royal']
@@ -43,326 +99,202 @@ def generate_random_vessel_name():
     return f"{random.choice(adjectives)} {random.choice(nouns)}"
 
 def generate_random_imo():
-    return ''.join(random.choices(string.digits, k=6))
+    return ''.join(random.choices(string.digits, k=7))
+
+def get_ai_response(user_input, last_reports):
+    current_time = datetime.now(pytz.utc).strftime("%H:%M:%S")
+    
+    context = f"""
+    The current UTC time is {current_time}. 
+    The last reports submitted were: {' -> '.join(last_reports)}
+    
+    Please provide guidance based on this context and the user's input.
+    Remember to only suggest reports from the provided list that make logical sense given the previous reports and maritime operations.
+    Use your knowledge as an experienced seafarer to ensure the suggested reports follow a realistic sequence of events.
+    """
+    
+    messages = [
+        {"role": "system", "content": TRAINING_DATA},
+        {"role": "system", "content": context},
+        {"role": "user", "content": user_input}
+    ]
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=300,
+            n=1,
+            stop=None,
+            temperature=0.7,
+        )
+        return response.choices[0].message['content'].strip()
+    except Exception as e:
+        return f"I'm sorry, but I encountered an error while processing your request: {str(e)}. Please try again later."
+
+def get_field_prompt(field):
+    prompt = f"Please provide guidance for the field: {field}"
+    response = get_ai_response(prompt, [])
+    return response
+
+def create_fields(fields, prefix):
+    for field in fields:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if field == "Vessel Name":
+                value = st.text_input(field, value=generate_random_vessel_name(), key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            elif field == "Vessel IMO":
+                value = st.text_input(field, value=generate_random_imo(), key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            elif "Date" in field:
+                value = st.date_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            elif "Time" in field:
+                value = st.time_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
+                value = st.number_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            elif "Direction" in field and "degrees" not in field:
+                value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=f"{prefix}_{field.lower().replace(' ', '_')}")
+            else:
+                value = st.text_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
+        
+        with col2:
+            if st.button("?", key=f"{prefix}_{field.lower().replace(' ', '_')}_help"):
+                st.info(get_field_prompt(field))
+
+def create_form(report_type):
+    st.header(f"New {report_type}")
+    
+    report_structure = REPORT_STRUCTURES.get(report_type, [])
+    
+    for section in report_structure:
+        with st.expander(section, expanded=False):
+            fields = SECTION_FIELDS.get(section, {})
+            if isinstance(fields, dict):
+                for subsection, subfields in fields.items():
+                    st.subheader(subsection)
+                    create_fields(subfields, f"{report_type}_{section}_{subsection}")
+            else:
+                create_fields(fields, f"{report_type}_{section}")
+
+    if st.button("Submit Report"):
+        st.success(f"{report_type} submitted successfully!")
+        return True
+    return False
+
+def create_collapsible_history_panel():
+    with st.expander("Report History (for testing)", expanded=False):
+        st.markdown('<div class="history-panel">', unsafe_allow_html=True)
+        st.markdown("<h3>Recent Reports</h3>", unsafe_allow_html=True)
+        
+        if "report_history" not in st.session_state:
+            st.session_state.report_history = []
+
+        # Ensure we always have 4 slots for history, filling with "None" if needed
+        history = st.session_state.report_history + ["None"] * (4 - len(st.session_state.report_history))
+
+        updated_history = []
+        for i in range(4):
+            selected_report = st.selectbox(
+                f"Report {i+1}:",
+                ["None"] + REPORT_TYPES,
+                key=f"history_{i}",
+                index=REPORT_TYPES.index(history[i]) + 1 if history[i] in REPORT_TYPES else 0
+            )
+            updated_history.append(selected_report)
+
+        # Update session state outside of the loop
+        st.session_state.report_history = [report for report in updated_history if report != "None"]
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+def create_chatbot(last_reports):
+    st.header("AI Assistant")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input("How can I assist you with your maritime reporting?"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        response = get_ai_response(prompt, last_reports)
+        st.session_state.messages.append({"role": "assistant", "content": response})
+        
+        # Check if a specific report type is agreed upon
+        for report_type in REPORT_TYPES:
+            if f"Agreed. The form for {report_type}" in response:
+                if is_valid_report_sequence(last_reports, report_type):
+                    st.session_state.current_report_type = report_type
+                    st.session_state.show_form = True
+                    break
+                else:
+                    st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
+        
+        st.experimental_rerun()
+
+def is_valid_report_sequence(last_reports, new_report):
+    if not last_reports:
+        return True
+    
+    last_report = last_reports[-1]
+    
+    # Define rules for report sequences
+    sequence_rules = {
+        "Arrival STS": ["Departure STS"],
+        "Begin of offhire": ["End of offhire"],
+        "Begin fuel change over": ["End fuel change over"],
+        "Begin canal passage": ["End canal passage"],
+        "Begin Anchoring/Drifting": ["End Anchoring/Drifting"],
+        "Begin of deviation": ["End of deviation"],
+        "Departure": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "Departure STS": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "End Anchoring/Drifting": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+    }
+    
+    # Check if the new report is valid based on the last report
+    if last_report in sequence_rules:
+        return new_report in sequence_rules[last_report] or new_report.startswith("Noon")
+    
+    # Allow "Noon" reports after most report types
+    if new_report.startswith("Noon"):
+        return True
+    
+    # For reports not explicitly defined in rules, allow them if they're not breaking any sequence
+    return new_report not in [item for sublist in sequence_rules.values() for item in sublist]
 
 def main():
     st.title("AI-Enhanced Maritime Reporting System")
+    
+    if "report_history" not in st.session_state:
+        st.session_state.report_history = []
     
     col1, col2 = st.columns([0.7, 0.3])
 
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
-        create_form()
+        if 'show_form' in st.session_state and st.session_state.show_form:
+            if create_form(st.session_state.current_report_type):
+                st.session_state.show_form = False
+                st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
+                st.experimental_rerun()
+        else:
+            st.write("Please use the AI Assistant to initiate a report.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
+        create_collapsible_history_panel()
         st.markdown('<div class="chatSection">', unsafe_allow_html=True)
-        create_chatbot()
+        create_chatbot(st.session_state.report_history)
+        
+        if st.button("Clear Chat"):
+            st.session_state.messages = []
+            st.session_state.show_form = False
+            st.session_state.current_report_type = None
+            st.session_state.report_history = []
+            st.experimental_rerun()
+        
         st.markdown('</div>', unsafe_allow_html=True)
-
-def create_form():
-    st.header("New Noon Report")
-    
-    with st.expander("Vessel Data", expanded=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            vessel_name = st.text_input("Vessel Name", value=generate_random_vessel_name())
-        with col2:
-            vessel_imo = st.text_input("Vessel IMO", value=generate_random_imo())
-
-    with st.expander("Voyage Data", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            local_date = st.date_input("Local Date")
-        with col2:
-            local_time = st.time_input("Local Time")
-        with col3:
-            utc_offset = st.selectbox("UTC Offset", [f"{i:+d}" for i in range(-12, 13)])
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            voyage_id = st.text_input("Voyage ID")
-        with col2:
-            segment_id = st.text_input("Segment ID")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            from_port = st.text_input("From Port")
-        with col2:
-            to_port = st.text_input("To Port")
-
-    with st.expander("Event Data", expanded=True):
-        event_types = [
-            "Arrival *", "Departure *", "Beginofoffhire *", "Endofoffhire *", "ArrivalSTS *", "DepartureSTS *",
-            "STS *", "Begin canal passage", "End canal passage", "Begin of sea passage", "End of sea passage",
-            "Begin Anchoring/Drifting", "End Anchoring/Drifting", "Noon (Position) - Sea passage",
-            "Noon (Position) - Port", "Noon (Position) - River", "Noon (Position) - Stoppage", "ETA update",
-            "Begin fuel change over", "End fuel change over", "Change destination (Deviation)",
-            "Begin of deviation", "End of deviation", "Entering special area", "Leaving special area"
-        ]
-        event_type = st.selectbox("Event Type", event_types)
-
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            time_elapsed = st.number_input("Time Elapsed (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col2:
-            sailing_time = st.number_input("Sailing Time (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col3:
-            anchor_time = st.number_input("Anchor Time (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col4:
-            dp_time = st.number_input("DP Time (hours)", min_value=0.0, step=0.1, format="%.1f")
-
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            ice_time = st.number_input("Ice Time (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col2:
-            maneuvering_time = st.number_input("Maneuvering (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col3:
-            loading_unloading_time = st.number_input("Loading/Unloading (hours)", min_value=0.0, step=0.1, format="%.1f")
-        with col4:
-            drifting_time = st.number_input("Drifting (hours)", min_value=0.0, step=0.1, format="%.1f")
-
-    with st.expander("Position", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            lat_deg = st.number_input("Latitude Degrees", min_value=-90, max_value=90, step=1)
-        with col2:
-            lat_min = st.number_input("Latitude Minutes", min_value=0.0, max_value=60.0, step=0.1, format="%.1f")
-        with col3:
-            lat_dir = st.selectbox("Latitude Direction", ["North", "South"])
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            lon_deg = st.number_input("Longitude Degrees", min_value=-180, max_value=180, step=1)
-        with col2:
-            lon_min = st.number_input("Longitude Minutes", min_value=0.0, max_value=60.0, step=0.1, format="%.1f")
-        with col3:
-            lon_dir = st.selectbox("Longitude Direction", ["East", "West"])
-
-    with st.expander("Cargo", expanded=True):
-        cargo_weight = st.number_input("Cargo Weight (mt)", min_value=0.0, step=0.1, format="%.1f")
-
-    with st.expander("Fuel Consumption", expanded=True):
-        st.subheader("Main Engine")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("ME LFO (mt)", min_value=0.0, step=0.1, key="me_lfo", format="%.1f")
-        with col2:
-            st.number_input("ME MGO (mt)", min_value=0.0, step=0.1, key="me_mgo", format="%.1f")
-        with col3:
-            st.number_input("ME LNG (mt)", min_value=0.0, step=0.1, key="me_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("ME Other (mt)", min_value=0.0, step=0.1, key="me_other", format="%.1f")
-        with col2:
-            st.text_input("ME Other Fuel Type", key="me_other_type")
-        
-        st.subheader("Auxiliary Engines")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("AE LFO (mt)", min_value=0.0, step=0.1, key="ae_lfo", format="%.1f")
-        with col2:
-            st.number_input("AE MGO (mt)", min_value=0.0, step=0.1, key="ae_mgo", format="%.1f")
-        with col3:
-            st.number_input("AE LNG (mt)", min_value=0.0, step=0.1, key="ae_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("AE Other (mt)", min_value=0.0, step=0.1, key="ae_other", format="%.1f")
-        with col2:
-            st.text_input("AE Other Fuel Type", key="ae_other_type")
-        
-        st.subheader("Boilers")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("Boiler LFO (mt)", min_value=0.0, step=0.1, key="boiler_lfo", format="%.1f")
-        with col2:
-            st.number_input("Boiler MGO (mt)", min_value=0.0, step=0.1, key="boiler_mgo", format="%.1f")
-        with col3:
-            st.number_input("Boiler LNG (mt)", min_value=0.0, step=0.1, key="boiler_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("Boiler Other (mt)", min_value=0.0, step=0.1, key="boiler_other", format="%.1f")
-        with col2:
-            st.text_input("Boiler Other Fuel Type", key="boiler_other_type")
-
-    with st.expander("Remaining on Board (ROB)", expanded=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("LFO ROB (mt)", min_value=0.0, step=0.1, key="rob_lfo", format="%.1f")
-        with col2:
-            st.number_input("MGO ROB (mt)", min_value=0.0, step=0.1, key="rob_mgo", format="%.1f")
-        with col3:
-            st.number_input("LNG ROB (mt)", min_value=0.0, step=0.1, key="rob_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("Other ROB (mt)", min_value=0.0, step=0.1, key="rob_other", format="%.1f")
-        with col2:
-            st.text_input("Other Fuel Type ROB", key="rob_other_type")
-        
-        st.number_input("Total Fuel ROB (mt)", min_value=0.0, step=0.1, key="total_rob", format="%.1f")
-
-    with st.expander("Fuel Allocation", expanded=True):
-        st.subheader("Cargo Heating")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("Cargo Heating LFO (mt)", min_value=0.0, step=0.1, key="cargo_heating_lfo", format="%.1f")
-        with col2:
-            st.number_input("Cargo Heating MGO (mt)", min_value=0.0, step=0.1, key="cargo_heating_mgo", format="%.1f")
-        with col3:
-            st.number_input("Cargo Heating LNG (mt)", min_value=0.0, step=0.1, key="cargo_heating_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("Cargo Heating Other (mt)", min_value=0.0, step=0.1, key="cargo_heating_other", format="%.1f")
-        with col2:
-            st.text_input("Cargo Heating Other Fuel Type", key="cargo_heating_other_type")
-        
-        st.subheader("Dynamic Positioning (DP)")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("DP LFO (mt)", min_value=0.0, step=0.1, key="dp_lfo", format="%.1f")
-        with col2:
-            st.number_input("DP MGO (mt)", min_value=0.0, step=0.1, key="dp_mgo", format="%.1f")
-        with col3:
-            st.number_input("DP LNG (mt)", min_value=0.0, step=0.1, key="dp_lng", format="%.1f")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.number_input("DP Other (mt)", min_value=0.0, step=0.1, key="dp_other", format="%.1f")
-        with col2:
-            st.text_input("DP Other Fuel Type", key="dp_other_type")
-
-    with st.expander("Machinery", expanded=True):
-        st.subheader("Main Engine")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("ME Load (kW)", min_value=0.0, step=0.1, key="me_load", format="%.1f")
-        with col2:
-            st.number_input("ME Load Percentage (%)", min_value=0.0, max_value=100.0, step=0.1, key="me_load_percentage", format="%.1f")
-        with col3:
-            st.number_input("ME Speed (RPM)", min_value=0.0, step=0.1, key="me_speed", format="%.1f")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("ME Propeller Pitch (m)", min_value=0.0, step=0.01, key="me_propeller_pitch", format="%.2f")
-        with col2:
-            st.number_input("ME Propeller Pitch Ratio", min_value=0.0, step=0.01, key="me_propeller_pitch_ratio", format="%.2f")
-        with col3:
-            st.checkbox("ME Aux Blower", key="me_aux_blower")
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("ME Shaft Generator Power (kW)", min_value=0.0, step=0.1, key="me_shaft_gen_power", format="%.1f")
-        with col2:
-            st.number_input("ME Charge Air Inlet Temp (°C)", min_value=-50.0, max_value=100.0, step=0.1, key="me_charge_air_inlet_temp", format="%.1f")
-        with col3:
-            st.number_input("ME Scav. Air Pressure (bar)", min_value=0.0, step=0.01, key="me_scav_air_pressure", format="%.2f")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.number_input("ME SFOC (g/kWh)", min_value=0.0, step=0.1, key="me_sfoc", format="%.1f")
-        with col2:
-            st.number_input("ME SFOC ISO Corrected (g/kWh)", min_value=0.0, step=0.1, key="me_sfoc_iso_corrected", format="%.1f")
-
-        st.subheader("Auxiliary Engines")
-        for i in range(1, 4):  # Three Auxiliary Engines
-            st.subheader(f"Auxiliary Engine {i}")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.number_input(f"AE{i} Load (kW)", min_value=0.0, step=0.1, key=f"ae{i}_load", format="%.1f")
-            with col2:
-                st.number_input(f"AE{i} Charge Air Inlet Temp (°C)", min_value=-50.0, max_value=100.0, step=0.1, key=f"ae{i}_charge_air_inlet_temp", format="%.1f")
-            with col3:
-                st.number_input(f"AE{i} Charge Air Pressure (bar)", min_value=0.0, step=0.01, key=f"ae{i}_charge_air_pressure", format="%.2f")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.number_input(f"AE{i} SFOC (g/kWh)", min_value=0.0, step=0.1, key=f"ae{i}_sfoc", format="%.1f")
-            with col2:
-                st.number_input(f"AE{i} SFOC ISO Corrected (g/kWh)", min_value=0.0, step=0.1, key=f"ae{i}_sfoc_iso_corrected", format="%.1f")
-
-    with st.expander("Weather", expanded=True):
-        st.subheader("Wind")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("Wind Direction (degrees)", min_value=0, max_value=360, step=1, key="wind_direction")
-        with col2:
-            st.number_input("Wind Speed (knots)", min_value=0.0, step=0.1, key="wind_speed", format="%.1f")
-        with col3:
-            st.number_input("Wind Force (Beaufort)", min_value=0, max_value=12, step=1, key="wind_force")
-        
-        st.subheader("Sea State")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("Sea State Direction (degrees)", min_value=0, max_value=360, step=1, key="sea_state_direction")
-        with col2:
-            st.number_input("Sea State Force (Douglas scale)", min_value=0, max_value=9, step=1, key="sea_state_force")
-        with col3:
-            st.number_input("Sea State Period (seconds)", min_value=0.0, step=0.1, key="sea_state_period", format="%.1f")
-        
-        st.subheader("Swell")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.number_input("Swell Direction (degrees)", min_value=0, max_value=360, step=1, key="swell_direction")
-        with col2:
-            st.number_input("Swell Height (meters)", min_value=0.0, step=0.1, key="swell_height", format="%.1f")
-        with col3:
-            st.number_input("Swell Period (seconds)", min_value=0.0, step=0.1, key="swell_period", format="%.1f")
-        
-        st.subheader("Current")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.number_input("Current Direction (degrees)", min_value=0, max_value=360, step=1, key="current_direction")
-        with col2:
-            st.number_input("Current Speed (knots)", min_value=0.0, step=0.1, key="current_speed", format="%.1f")
-        
-        st.subheader("Temperature")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.number_input("Air Temperature (°C)", min_value=-50.0, max_value=50.0, step=0.1, key="air_temperature", format="%.1f")
-        with col2:
-            st.number_input("Sea Temperature (°C)", min_value=-2.0, max_value=35.0, step=0.1, key="sea_temperature", format="%.1f")
-
-    with st.expander("Draft", expanded=True):
-        st.subheader("Actual")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.number_input("Actual Forward Draft (m)", min_value=0.0, step=0.01, key="actual_forward_draft", format="%.2f")
-        with col2:
-            st.number_input("Actual Aft Draft (m)", min_value=0.0, step=0.01, key="actual_aft_draft", format="%.2f")
-        
-        st.number_input("Displacement (mt)", min_value=0.0, step=0.1, key="displacement", format="%.1f")
-        st.number_input("Water Depth (m)", min_value=0.0, step=0.1, key="water_depth", format="%.1f")
-
-    if st.button("Submit Report"):
-        st.success("Report submitted successfully!")
-
-def create_chatbot():
-    st.header("AI Assistant")
-    
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    # Display chat messages from history on app rerun
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # React to user input
-    if prompt := st.chat_input("How can I help you with your report?"):
-        # Display user message in chat message container
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        # Generate AI response (placeholder)
-        response = f"Thank you for your question. Here's a placeholder response to: {prompt}"
-        
-        # Display AI response in chat message container
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        # Add AI response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
 
 if __name__ == "__main__":
     main()
