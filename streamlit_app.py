@@ -235,7 +235,6 @@ def create_form(report_type):
     st.header(f"New {report_type}")
     
     report_structure = REPORT_STRUCTURES.get(report_type, [])
-    st.write(f"Debug: Report structure for {report_type}: {report_structure}")  # Debug output
     
     if not report_structure:
         st.error(f"No structure defined for report type: {report_type}")
@@ -245,7 +244,6 @@ def create_form(report_type):
         with st.expander(section, expanded=True):
             st.subheader(section)
             fields = SECTION_FIELDS.get(section, {})
-            st.write(f"Debug: Fields for {section}: {fields}")  # Debug output
             
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
@@ -263,7 +261,6 @@ def create_form(report_type):
         else:
             st.error("Please correct the errors in the report before submitting.")
     return False
-
     
 def validate_report(report_type):
     # Add your validation logic here
@@ -381,7 +378,6 @@ def main():
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
         if 'current_report_type' in st.session_state:
-            st.write(f"Debug: Current report type: {st.session_state.current_report_type}")  # Debug output
             create_form(st.session_state.current_report_type)
         else:
             st.write("Please use the AI Assistant to initiate a report.")
@@ -399,5 +395,6 @@ def main():
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
+
 if __name__ == "__main__":
     main()
