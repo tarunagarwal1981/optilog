@@ -69,7 +69,7 @@ REPORT_TYPES = [
 REPORT_STRUCTURES = {
     "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
     "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
-    # Define other report structures similarly...
+    # Add structures for other report types here
 }
 
 SECTION_FIELDS = {
@@ -130,8 +130,7 @@ When a user agrees to create a specific report, inform them that the form will a
 
 Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page."
 
-Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime
-operations.
+Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
 
 For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
 """
@@ -207,12 +206,10 @@ def create_form(report_type):
     st.header(f"New {report_type}")
     
     report_structure = REPORT_STRUCTURES.get(report_type, [])
-    st.write(f"Debug: Report structure for {report_type} - {report_structure}")
     
     for section in report_structure:
         with st.expander(section, expanded=True):
             fields = SECTION_FIELDS.get(section, [])
-            st.write(f"Debug: Fields for section {section} - {fields}")
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
@@ -314,11 +311,18 @@ def main():
     if "report_history" not in st.session_state:
         st.session_state.report_history = []
     
+    if "show_form" not in st.session_state:
+        st.session_state.show_form = False
+    
+    if "current_report_type" not in st.session_state:
+        st.session_state.current_report_type = None
+
+    # Create a two-column layout
     col1, col2 = st.columns([0.7, 0.3])
 
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
-        if 'show_form' in st.session_state and st.session_state.show_form:
+        if st.session_state.show_form:
             if create_form(st.session_state.current_report_type):
                 st.session_state.show_form = False
                 st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
