@@ -205,7 +205,7 @@ def create_fields(fields, prefix):
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
             # Add a short prompt above the field
-            st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
+            #st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
             
             if field == "Vessel Name":
                 st.text_input(field, value=generate_random_vessel_name(), key=field_key)
