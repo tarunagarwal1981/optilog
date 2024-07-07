@@ -239,7 +239,7 @@ def create_form(report_type):
     report_structure = REPORT_STRUCTURES.get(report_type, [])
     
     for section in report_structure:
-        with st.expander(section, expanded=False):
+        with st.expander(section, expanded=True):
             fields = SECTION_FIELDS.get(section, {})
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
