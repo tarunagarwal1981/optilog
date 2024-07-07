@@ -46,11 +46,7 @@ st.markdown("""
     .history-select {
         margin-bottom: 5px;
     }
-    .field-prompt {
-        font-size: 0.8em;
-        color: #666;
-        margin-bottom: 2px;
-    }
+
 </style>
 """, unsafe_allow_html=True)
 
