@@ -209,27 +209,28 @@ def create_fields(fields, prefix):
         st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
         
         if field == "Vessel Name":
-            value = st.text_input(field, value=generate_random_vessel_name(), key=field_key)
+            st.text_input(field, value=generate_random_vessel_name(), key=field_key)
         elif field == "Vessel IMO":
-            value = st.text_input(field, value=generate_random_imo(), key=field_key)
+            st.text_input(field, value=generate_random_imo(), key=field_key)
         elif "Date" in field:
-            value = st.date_input(field, key=field_key)
+            st.date_input(field, key=field_key)
         elif "Time" in field:
-            value = st.time_input(field, key=field_key)
+            st.time_input(field, key=field_key)
         elif field in VALIDATION_RULES:
             min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
             value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
             if value < min_val or value > max_val:
                 st.warning(f"{field} should be between {min_val} and {max_val}")
         elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
-            value = st.number_input(field, key=field_key)
+            st.number_input(field, key=field_key)
         elif "Direction" in field and "degrees" not in field:
-            value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
+            st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
         else:
-            value = st.text_input(field, key=field_key)
+            st.text_input(field, key=field_key)
         
         # Add specific validation for Main Engine consumption
         if field.startswith("ME ") and field.endswith(" (mt)"):
+            value = st.session_state.get(field_key, 0)
             if value > 15:
                 st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
 
@@ -237,10 +238,14 @@ def create_form(report_type):
     st.header(f"New {report_type}")
     
     report_structure = REPORT_STRUCTURES.get(report_type, [])
+    st.write(f"Debug: Report structure for {report_type}: {report_structure}")  # Debug output
     
     for section in report_structure:
         with st.expander(section, expanded=True):
+            st.subheader(section)
             fields = SECTION_FIELDS.get(section, {})
+            st.write(f"Debug: Fields for {section}: {fields}")  # Debug output
+            
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
@@ -249,14 +254,13 @@ def create_form(report_type):
                 create_fields(fields, f"{report_type}_{section}")
 
     if st.button("Submit Report"):
-        # Perform final validations
         if validate_report(report_type):
             st.success(f"{report_type} submitted successfully!")
             return True
         else:
             st.error("Please correct the errors in the report before submitting.")
     return False
-
+    
 def validate_report(report_type):
     # Add your validation logic here
     # For example, checking if all required fields are filled
@@ -373,11 +377,9 @@ def main():
 
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
-        if 'show_form' in st.session_state and st.session_state.show_form:
-            if create_form(st.session_state.current_report_type):
-                st.session_state.show_form = False
-                st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
-                st.experimental_rerun()
+        if 'current_report_type' in st.session_state:
+            st.write(f"Debug: Current report type: {st.session_state.current_report_type}")  # Debug output
+            create_form(st.session_state.current_report_type)
         else:
             st.write("Please use the AI Assistant to initiate a report.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -389,7 +391,6 @@ def main():
         
         if st.button("Clear Chat"):
             st.session_state.messages = []
-            st.session_state.show_form = False
             st.session_state.current_report_type = None
             st.session_state.report_history = []
             st.experimental_rerun()
