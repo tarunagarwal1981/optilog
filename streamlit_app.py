@@ -8,17 +8,13 @@ import re
 import random
 import string
 
-# Set page config
-st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
-
-# Custom CSS for compact layout, history panel, and field prompts
 st.markdown("""
 <style>
     .reportSection { padding-right: 1rem; }
     .chatSection { padding-left: 1rem; border-left: 1px solid #e0e0e0; }
     .stButton > button { width: 100%; }
     .main .block-container { padding-top: 1rem; padding-bottom: 1rem; max-width: 100%; }
-    h1, h2, h3 { margin-top: 0; font-size: 1.2em; }
+    h1, h2, h3 { margin-top: 0; font-size: 1.5em; line-height: 1.2; }
     .stAlert { margin-top: 1rem; }
     .stNumberInput, .stTextInput, .stSelectbox { 
         padding-bottom: 0.5rem !important; 
