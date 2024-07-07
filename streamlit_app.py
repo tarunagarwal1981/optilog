@@ -209,27 +209,28 @@ def create_fields(fields, prefix):
         st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
         
         if field == "Vessel Name":
-            value = st.text_input(field, value=generate_random_vessel_name(), key=field_key)
+            st.text_input(field, value=generate_random_vessel_name(), key=field_key)
         elif field == "Vessel IMO":
-            value = st.text_input(field, value=generate_random_imo(), key=field_key)
+            st.text_input(field, value=generate_random_imo(), key=field_key)
         elif "Date" in field:
-            value = st.date_input(field, key=field_key)
+            st.date_input(field, key=field_key)
         elif "Time" in field:
-            value = st.time_input(field, key=field_key)
+            st.time_input(field, key=field_key)
         elif field in VALIDATION_RULES:
             min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
             value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
             if value < min_val or value > max_val:
                 st.warning(f"{field} should be between {min_val} and {max_val}")
         elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
-            value = st.number_input(field, key=field_key)
+            st.number_input(field, key=field_key)
         elif "Direction" in field and "degrees" not in field:
-            value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
+            st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
         else:
-            value = st.text_input(field, key=field_key)
+            st.text_input(field, key=field_key)
         
         # Add specific validation for Main Engine consumption
         if field.startswith("ME ") and field.endswith(" (mt)"):
+            value = st.session_state.get(field_key, 0)
             if value > 15:
                 st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
 
@@ -374,10 +375,7 @@ def main():
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
         if 'show_form' in st.session_state and st.session_state.show_form:
-            if create_form(st.session_state.current_report_type):
-                st.session_state.show_form = False
-                st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
-                st.experimental_rerun()
+            create_form(st.session_state.current_report_type)
         else:
             st.write("Please use the AI Assistant to initiate a report.")
         st.markdown('</div>', unsafe_allow_html=True)
