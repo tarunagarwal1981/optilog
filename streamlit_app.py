@@ -371,7 +371,7 @@ def is_valid_report_sequence(last_reports, new_report):
     return new_report not in [item for sublist in sequence_rules.values() for item in sublist]
 
 def main():
-    st.title("AI-Enhanced Maritime Reporting System")
+    st.title("OptiLog - AI-Enhanced Maritime Reporting System")
     
     if "report_history" not in st.session_state:
         st.session_state.report_history = []
