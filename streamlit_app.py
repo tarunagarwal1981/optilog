@@ -1,15 +1,17 @@
 import streamlit as st
 import openai
-from datetime import datetime
+from datetime import datetime, time
 import pytz
+import json
 import os
+import re
 import random
 import string
 
 # Set page config
 st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
 
-# Custom CSS for compact layout and history panel
+# Custom CSS for compact layout, history panel, and field prompts
 st.markdown("""
 <style>
     .reportSection { padding-right: 1rem; }
@@ -44,66 +46,93 @@ st.markdown("""
     .history-select {
         margin-bottom: 5px;
     }
+    .field-prompt {
+        font-size: 0.8em;
+        color: #666;
+        margin-bottom: 2px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Set up OpenAI API key
-openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+try:
+    openai.api_key = st.secrets["OPENAI_API_KEY"]
+except KeyError:
+    openai.api_key = os.getenv("OPENAI_API_KEY")
 
 if not openai.api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets or as an environment variable.")
     st.stop()
 
-# Define report types, structures, and fields
+# Define report types
 REPORT_TYPES = [
-    "Arrival", "Departure", "Begin of offhire", "End of offhire", 
-    "Arrival STS", "Departure STS", "STS", "Begin canal passage", 
-    "End canal passage", "Begin of sea passage", "End of sea passage", 
-    "Begin Anchoring/Drifting", "End Anchoring/Drifting", "Noon (Position) - Sea passage", 
-    "Noon (Position) - Port", "Noon (Position) - River", "Noon (Position) - Stoppage", 
-    "ETA update", "Begin fuel change over", "End fuel change over", 
-    "Change destination (Deviation)", "Begin of deviation", "End of deviation", 
-    "Entering special area", "Leaving special area"
+    "Arrival", "Departure", "Begin of offhire", "End of offhire", "Arrival STS",
+    "Departure STS", "STS", "Begin canal passage", "End canal passage",
+    "Begin of sea passage", "End of sea passage", "Begin Anchoring/Drifting",
+    "End Anchoring/Drifting", "Noon (Position) - Sea passage", "Noon (Position) - Port",
+    "Noon (Position) - River", "Noon (Position) - Stoppage", "ETA update",
+    "Begin fuel change over", "End fuel change over", "Change destination (Deviation)",
+    "Begin of deviation", "End of deviation", "Entering special area", "Leaving special area"
 ]
 
+# Define report structures
 REPORT_STRUCTURES = {
-    "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
-    "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
+    "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Weather", "Draft"],
+    "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Weather", "Draft"],
     # Add structures for other report types here
 }
 
+# Define section fields
 SECTION_FIELDS = {
     "Vessel Data": ["Vessel Name", "Vessel IMO"],
     "Voyage Data": ["Local Date", "Local Time", "UTC Offset", "Voyage ID", "Segment ID", "From Port", "To Port"],
     "Event Data": ["Event Type", "Time Elapsed (hours)", "Sailing Time (hours)", "Anchor Time (hours)", "DP Time (hours)", "Ice Time (hours)", "Maneuvering (hours)", "Loading/Unloading (hours)", "Drifting (hours)"],
     "Position": ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"],
     "Cargo": ["Cargo Weight (mt)"],
-    "Fuel Consumption": [
-        "ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)", "ME Other Fuel Type",
-        "AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)", "AE Other Fuel Type",
-        "Boiler LFO (mt)", "Boiler MGO (mt)", "Boiler LNG (mt)", "Boiler Other (mt)", "Boiler Other Fuel Type"
-    ],
+    "Fuel Consumption": {
+        "Main Engine": ["ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)", "ME Other Fuel Type"],
+        "Auxiliary Engines": ["AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)", "AE Other Fuel Type"],
+        "Boilers": ["Boiler LFO (mt)", "Boiler MGO (mt)", "Boiler LNG (mt)", "Boiler Other (mt)", "Boiler Other Fuel Type"]
+    },
     "ROB": ["LFO ROB (mt)", "MGO ROB (mt)", "LNG ROB (mt)", "Other ROB (mt)", "Other Fuel Type ROB", "Total Fuel ROB (mt)"],
-    "Fuel Allocation": [
-        "Cargo Heating LFO (mt)", "Cargo Heating MGO (mt)", "Cargo Heating LNG (mt)", "Cargo Heating Other (mt)", "Cargo Heating Other Fuel Type",
-        "DP LFO (mt)", "DP MGO (mt)", "DP LNG (mt)", "DP Other (mt)", "DP Other Fuel Type"
-    ],
-    "Machinery": [
-        "ME Load (kW)", "ME Load Percentage (%)", "ME Speed (RPM)", "ME Propeller Pitch (m)", "ME Propeller Pitch Ratio", "ME Shaft Generator Power (kW)", "ME Charge Air Inlet Temp (°C)", "ME Scav. Air Pressure (bar)", "ME SFOC (g/kWh)", "ME SFOC ISO Corrected (g/kWh)"
-    ],
-    "Auxiliary Engines": [
-        "AE1 Load (kW)", "AE1 Charge Air Inlet Temp (°C)", "AE1 Charge Air Pressure (bar)", "AE1 SFOC (g/kWh)", "AE1 SFOC ISO Corrected (g/kWh)",
-        "AE2 Load (kW)", "AE2 Charge Air Inlet Temp (°C)", "AE2 Charge Air Pressure (bar)", "AE2 SFOC (g/kWh)", "AE2 SFOC ISO Corrected (g/kWh)",
-        "AE3 Load (kW)", "AE3 Charge Air Inlet Temp (°C)", "AE3 Charge Air Pressure (bar)", "AE3 SFOC (g/kWh)", "AE3 SFOC ISO Corrected (g/kWh)"
-    ],
-    "Weather": [
-        "Wind Direction (degrees)", "Wind Speed (knots)", "Wind Force (Beaufort)",
-        "Sea State Direction (degrees)", "Sea State Force (Douglas scale)", "Sea State Period (seconds)",
-        "Swell Direction (degrees)", "Swell Height (meters)", "Swell Period (seconds)",
-        "Current Direction (degrees)", "Current Speed (knots)",
-        "Air Temperature (°C)", "Sea Temperature (°C)"
-    ],
-    "Draft": ["Actual Forward Draft (m)", "Actual Aft Draft (m)", "Displacement (mt)", "Water Depth (m)"]
+    "Fuel Allocation": {
+        "Cargo Heating": ["Cargo Heating LFO (mt)", "Cargo Heating MGO (mt)", "Cargo Heating LNG (mt)", "Cargo Heating Other (mt)", "Cargo Heating Other Fuel Type"],
+        "Dynamic Positioning (DP)": ["DP LFO (mt)", "DP MGO (mt)", "DP LNG (mt)", "DP Other (mt)", "DP Other Fuel Type"]
+    },
+    "Machinery": {
+        "Main Engine": ["ME Load (kW)", "ME Load Percentage (%)", "ME Speed (RPM)", "ME Propeller Pitch (m)", "ME Propeller Pitch Ratio", "ME Shaft Generator Power (kW)", "ME Charge Air Inlet Temp (°C)", "ME Scav. Air Pressure (bar)", "ME SFOC (g/kWh)", "ME SFOC ISO Corrected (g/kWh)"],
+        "Auxiliary Engines": {
+            "Auxiliary Engine 1": ["AE1 Load (kW)", "AE1 Charge Air Inlet Temp (°C)", "AE1 Charge Air Pressure (bar)", "AE1 SFOC (g/kWh)", "AE1 SFOC ISO Corrected (g/kWh)"],
+            "Auxiliary Engine 2": ["AE2 Load (kW)", "AE2 Charge Air Inlet Temp (°C)", "AE2 Charge Air Pressure (bar)", "AE2 SFOC (g/kWh)", "AE2 SFOC ISO Corrected (g/kWh)"],
+            "Auxiliary Engine 3": ["AE3 Load (kW)", "AE3 Charge Air Inlet Temp (°C)", "AE3 Charge Air Pressure (bar)", "AE3 SFOC (g/kWh)", "AE3 SFOC ISO Corrected (g/kWh)"]
+        }
+    },
+    "Weather": {
+        "Wind": ["Wind Direction (degrees)", "Wind Speed (knots)", "Wind Force (Beaufort)"],
+        "Sea State": ["Sea State Direction (degrees)", "Sea State Force (Douglas scale)", "Sea State Period (seconds)"],
+        "Swell": ["Swell Direction (degrees)", "Swell Height (meters)", "Swell Period (seconds)"],
+        "Current": ["Current Direction (degrees)", "Current Speed (knots)"],
+        "Temperature": ["Air Temperature (°C)", "Sea Temperature (°C)"]
+    },
+    "Draft": {
+        "Actual": ["Actual Forward Draft (m)", "Actual Aft Draft (m)", "Displacement (mt)", "Water Depth (m)"]
+    }
+}
+
+# Define validation rules
+VALIDATION_RULES = {
+    "ME LFO (mt)": {"min": 0, "max": 25},
+    "ME MGO (mt)": {"min": 0, "max": 25},
+    "ME LNG (mt)": {"min": 0, "max": 25},
+    "ME Other (mt)": {"min": 0, "max": 25},
+    "AE LFO (mt)": {"min": 0, "max": 3},
+    "AE MGO (mt)": {"min": 0, "max": 3},
+    "AE LNG (mt)": {"min": 0, "max": 3},
+    "AE Other (mt)": {"min": 0, "max": 3},
+    "Boiler LFO (mt)": {"min": 0, "max": 4},
+    "Boiler MGO (mt)": {"min": 0, "max": 4},
+    "Boiler LNG (mt)": {"min": 0, "max": 4},
+    "Boiler Other (mt)": {"min": 0, "max": 4},
 }
 
 # Prepare the training data as a string
@@ -131,11 +160,8 @@ When a user agrees to create a specific report, inform them that the form will a
 Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page."
 
 Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
-
-For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
 """
 
-# Utility functions
 def generate_random_vessel_name():
     adjectives = ['Swift', 'Majestic', 'Brave', 'Stellar', 'Royal']
     nouns = ['Voyager', 'Explorer', 'Mariner', 'Adventurer', 'Navigator']
@@ -175,60 +201,37 @@ def get_ai_response(user_input, last_reports):
     except Exception as e:
         return f"I'm sorry, but I encountered an error while processing your request: {str(e)}. Please try again later."
 
-def get_field_prompt(field):
-    prompt = f"Please provide guidance for the field: {field}"
-    response = get_ai_response(prompt, [])
-    return response
-
-def is_valid_report_sequence(last_reports, new_report):
-    if not last_reports:
-        return True
-    
-    last_report = last_reports[-1]
-    
-    sequence_rules = {
-        "Arrival STS": ["Departure STS"],
-        "Begin of offhire": ["End of offhire"],
-        "Begin fuel change over": ["End fuel change over"],
-        "Begin canal passage": ["End canal passage"],
-        "Begin Anchoring/Drifting": ["End Anchoring/Drifting"],
-        "Begin of deviation": ["End of deviation"],
-        "Departure": ["Begin of sea passage", "Noon (Position) - Sea passage"],
-        "Departure STS": ["Begin of sea passage", "Noon (Position) - Sea passage"],
-        "End Anchoring/Drifting": ["Begin of sea passage", "Noon (Position) - Sea passage"],
-    }
-    
-    if last_report in sequence_rules:
-        return new_report in sequence_rules[last_report] or new_report.startswith("Noon")
-    
-    if new_report.startswith("Noon"):
-        return True
-    
-    return new_report not in [item for sublist in sequence_rules.values() for item in sublist]
-
-# Main application functions
 def create_fields(fields, prefix):
     for field in fields:
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            if field == "Vessel Name":
-                value = st.text_input(field, value=generate_random_vessel_name(), key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            elif field == "Vessel IMO":
-                value = st.text_input(field, value=generate_random_imo(), key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            elif "Date" in field:
-                value = st.date_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            elif "Time" in field:
-                value = st.time_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
-                value = st.number_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            elif "Direction" in field and "degrees" not in field:
-                value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=f"{prefix}_{field.lower().replace(' ', '_')}")
-            else:
-                value = st.text_input(field, key=f"{prefix}_{field.lower().replace(' ', '_')}")
+        field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
         
-        with col2:
-            if st.button("?", key=f"{prefix}_{field.lower().replace(' ', '_')}_help"):
-                st.info(get_field_prompt(field))
+        # Add a short prompt above the field
+        st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
+        
+        if field == "Vessel Name":
+            value = st.text_input(field, value=generate_random_vessel_name(), key=field_key)
+        elif field == "Vessel IMO":
+            value = st.text_input(field, value=generate_random_imo(), key=field_key)
+        elif "Date" in field:
+            value = st.date_input(field, key=field_key)
+        elif "Time" in field:
+            value = st.time_input(field, key=field_key)
+        elif field in VALIDATION_RULES:
+            min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
+            value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
+            if value < min_val or value > max_val:
+                st.warning(f"{field} should be between {min_val} and {max_val}")
+        elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
+            value = st.number_input(field, key=field_key)
+        elif "Direction" in field and "degrees" not in field:
+            value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
+        else:
+            value = st.text_input(field, key=field_key)
+        
+        # Add specific validation for Main Engine consumption
+        if field.startswith("ME ") and field.endswith(" (mt)"):
+            if value > 15:
+                st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
 
 def create_form(report_type):
     st.header(f"New {report_type}")
@@ -236,8 +239,8 @@ def create_form(report_type):
     report_structure = REPORT_STRUCTURES.get(report_type, [])
     
     for section in report_structure:
-        with st.expander(section, expanded=True):
-            fields = SECTION_FIELDS.get(section, [])
+        with st.expander(section, expanded=False):
+            fields = SECTION_FIELDS.get(section, {})
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
@@ -246,9 +249,36 @@ def create_form(report_type):
                 create_fields(fields, f"{report_type}_{section}")
 
     if st.button("Submit Report"):
-        st.success(f"{report_type} submitted successfully!")
-        return True
+        # Perform final validations
+        if validate_report(report_type):
+            st.success(f"{report_type} submitted successfully!")
+            return True
+        else:
+            st.error("Please correct the errors in the report before submitting.")
     return False
+
+def validate_report(report_type):
+    # Add your validation logic here
+    # For example, checking if all required fields are filled
+    # and if the data is consistent (e.g., ROB calculations)
+    
+    # Placeholder for ROB validation
+    fuel_types = ["LFO", "MGO", "LNG", "Other"]
+    total_rob = 0
+    for fuel in fuel_types:
+        rob_key = f"{report_type}_ROB_{fuel.lower()}_rob_(mt)"
+        if rob_key in st.session_state:
+            total_rob += st.session_state[rob_key]
+    
+    calculated_total = total_rob
+    reported_total_key = f"{report_type}_ROB_total_fuel_rob_(mt)"
+    if reported_total_key in st.session_state:
+        reported_total = st.session_state[reported_total_key]
+        if abs(calculated_total - reported_total) > 0.1:  # Allow for small rounding differences
+            st.warning(f"Total Fuel ROB ({reported_total}) doesn't match the sum of individual fuel ROBs ({calculated_total})")
+            return False
+    
+    return True  # If all validations pass
 
 def create_collapsible_history_panel():
     with st.expander("Report History (for testing)", expanded=False):
@@ -297,13 +327,41 @@ def create_chatbot(last_reports):
                 if is_valid_report_sequence(last_reports, report_type):
                     st.session_state.current_report_type = report_type
                     st.session_state.show_form = True
-                    st.session_state.new_report_requested = True
-                    st.write(f"Debug: Setting show_form to True for {report_type}")  # Debug print
                     break
                 else:
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
         
         st.experimental_rerun()
+
+def is_valid_report_sequence(last_reports, new_report):
+    if not last_reports:
+        return True
+    
+    last_report = last_reports[-1]
+    
+    # Define rules for report sequences
+    sequence_rules = {
+        "Arrival STS": ["Departure STS"],
+        "Begin of offhire": ["End of offhire"],
+        "Begin fuel change over": ["End fuel change over"],
+        "Begin canal passage": ["End canal passage"],
+        "Begin Anchoring/Drifting": ["End Anchoring/Drifting"],
+        "Begin of deviation": ["End of deviation"],
+        "Departure": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "Departure STS": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+        "End Anchoring/Drifting": ["Begin of sea passage", "Noon (Position) - Sea passage"],
+    }
+    
+    # Check if the new report is valid based on the last report
+    if last_report in sequence_rules:
+        return new_report in sequence_rules[last_report] or new_report.startswith("Noon")
+    
+    # Allow "Noon" reports after most report types
+    if new_report.startswith("Noon"):
+        return True
+    
+    # For reports not explicitly defined in rules, allow them if they're not breaking any sequence
+    return new_report not in [item for sublist in sequence_rules.values() for item in sublist]
 
 def main():
     st.title("AI-Enhanced Maritime Reporting System")
@@ -311,33 +369,15 @@ def main():
     if "report_history" not in st.session_state:
         st.session_state.report_history = []
     
-    if "show_form" not in st.session_state:
-        st.session_state.show_form = False
-    
-    if "current_report_type" not in st.session_state:
-        st.session_state.current_report_type = None
-    
-    if "new_report_requested" not in st.session_state:
-        st.session_state.new_report_requested = False
-
-    st.write(f"Debug: Initial state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}, new_report_requested: {st.session_state.new_report_requested}")  # Debug print
-
-    # Create a two-column layout
     col1, col2 = st.columns([0.7, 0.3])
 
     with col1:
         st.markdown('<div class="reportSection">', unsafe_allow_html=True)
-        if st.session_state.show_form and st.session_state.current_report_type:
-            st.write(f"Debug: Showing form for {st.session_state.current_report_type}")  # Debug print
+        if 'show_form' in st.session_state and st.session_state.show_form:
             if create_form(st.session_state.current_report_type):
                 st.session_state.show_form = False
-                st.session_state.current_report_type = None
                 st.session_state.report_history = [st.session_state.current_report_type] + st.session_state.report_history[:3]
                 st.experimental_rerun()
-        elif st.session_state.new_report_requested:
-            st.write(f"Debug: New report requested for {st.session_state.current_report_type}")
-            st.session_state.new_report_requested = False
-            st.experimental_rerun()
         else:
             st.write("Please use the AI Assistant to initiate a report.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -352,12 +392,9 @@ def main():
             st.session_state.show_form = False
             st.session_state.current_report_type = None
             st.session_state.report_history = []
-            st.session_state.new_report_requested = False
             st.experimental_rerun()
         
         st.markdown('</div>', unsafe_allow_html=True)
-
-    st.write(f"Debug: Final state - show_form: {st.session_state.show_form}, current_report_type: {st.session_state.current_report_type}, new_report_requested: {st.session_state.new_report_requested}")  # Debug print
 
 if __name__ == "__main__":
     main()
