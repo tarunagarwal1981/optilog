@@ -67,14 +67,12 @@ REPORT_TYPES = [
 ]
 
 REPORT_STRUCTURES = {
-    # Define structures for each report type
     "Arrival": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
     "Departure": ["Vessel Data", "Voyage Data", "Event Data", "Position", "Cargo", "Fuel Consumption", "ROB", "Fuel Allocation", "Machinery", "Auxiliary Engines", "Weather", "Draft"],
     # Define other report structures similarly...
 }
 
 SECTION_FIELDS = {
-    # Define section fields for each report type
     "Vessel Data": ["Vessel Name", "Vessel IMO"],
     "Voyage Data": ["Local Date", "Local Time", "UTC Offset", "Voyage ID", "Segment ID", "From Port", "To Port"],
     "Event Data": ["Event Type", "Time Elapsed (hours)", "Sailing Time (hours)", "Anchor Time (hours)", "DP Time (hours)", "Ice Time (hours)", "Maneuvering (hours)", "Loading/Unloading (hours)", "Drifting (hours)"],
@@ -130,10 +128,10 @@ When suggesting follow-up reports, carefully consider the history of the last 3-
 
 When a user agrees to create a specific report, inform them that the form will appear on the left side of the page with the relevant sections for that report type.
 
-Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page
-will now appear on the left side of the page."
+Provide concise and helpful guidance throughout the report creation process. If a user agrees to create a report, respond with "Agreed. The form for [REPORT TYPE] will now appear on the left side of the page."
 
-Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
+Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime
+operations.
 
 For each field in the form, provide a brief, helpful prompt or guidance when the user interacts with it. Include any relevant validation rules or typical value ranges.
 """
@@ -209,10 +207,12 @@ def create_form(report_type):
     st.header(f"New {report_type}")
     
     report_structure = REPORT_STRUCTURES.get(report_type, [])
+    st.write(f"Debug: Report structure for {report_type} - {report_structure}")
     
     for section in report_structure:
         with st.expander(section, expanded=True):
             fields = SECTION_FIELDS.get(section, [])
+            st.write(f"Debug: Fields for section {section} - {fields}")
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
