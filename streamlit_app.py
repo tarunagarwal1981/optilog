@@ -1,10 +1,8 @@
 import streamlit as st
 import openai
-from datetime import datetime, time
+from datetime import datetime
 import pytz
-import json
 import os
-import re
 import random
 import string
 
@@ -50,19 +48,31 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Set up OpenAI API key
-try:
-    openai.api_key = st.secrets["OPENAI_API_KEY"]
-except KeyError:
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 if not openai.api_key:
     st.error("OpenAI API key not found. Please set it in Streamlit secrets or as an environment variable.")
     st.stop()
 
-# Define report types, structures, and fields (as before)
-REPORT_TYPES = [...]
-REPORT_STRUCTURES = {...}
-SECTION_FIELDS = {...}
+# Define report types, structures, and fields
+REPORT_TYPES = [
+    "Arrival", "Departure", "Begin of offhire", "End of offhire", 
+    "Arrival STS", "Departure STS", "STS", "Begin canal passage", 
+    "End canal passage", "Begin of sea passage", "End of sea passage", 
+    "Begin Anchoring/Drifting", "End Anchoring/Drifting", "Noon (Position) - Sea passage", 
+    "Noon (Position) - Port", "Noon (Position) - River", "Noon (Position) - Stoppage", 
+    "ETA update", "Begin fuel change over", "End fuel change over", 
+    "Change destination (Deviation)", "Begin of deviation", "End of deviation", 
+    "Entering special area", "Leaving special area"
+]
+
+REPORT_STRUCTURES = {
+    # Define structures for each report type
+}
+
+SECTION_FIELDS = {
+    # Define section fields for each report type
+}
 
 # Prepare the training data as a string
 TRAINING_DATA = f"""
@@ -173,7 +183,7 @@ def create_form(report_type):
                     st.subheader(subsection)
                     create_fields(subfields, f"{report_type}_{section}_{subsection}")
             else:
-                create_fields(fields, f"{report_type}_{section}")
+                                create_fields(fields, f"{report_type}_{section}")
 
     if st.button("Submit Report"):
         st.success(f"{report_type} submitted successfully!")
@@ -298,3 +308,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
