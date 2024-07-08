@@ -272,8 +272,6 @@ def create_fields(fields, prefix):
                 if field == "ME Other (mt)":  # After all ME consumption fields
                     if me_total_consumption > 25:
                         st.markdown('<p class="info-message">Total ME consumption exceeds expected consumption of 25.</p>', unsafe_allow_html=True)
-                    if me_total_consumption > 15:
-                        st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
                 
                 st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
             
@@ -293,6 +291,10 @@ def create_fields(fields, prefix):
             
             elif field.startswith("Boiler"):
                 value = st.number_input(field, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
+                
+                # Display Boiler consumption message if ME total consumption > 15
+                if me_total_consumption > 15:
+                    st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
             
             elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
