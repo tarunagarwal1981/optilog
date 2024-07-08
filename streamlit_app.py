@@ -266,9 +266,9 @@ def create_fields(fields, prefix):
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
             if field == "Local Date":
-                value = st.date_input(field, value=datetime.datetime.strptime(current_date, "%Y-%m-%d"), key=field_key)
+                value = st.date_input(field, value=datetime.strptime(current_date, "%Y-%m-%d"), key=field_key)
             elif field == "Local Time":
-                value = st.time_input(field, value=datetime.datetime.strptime(current_time, "%H:%M").time(), key=field_key)
+                value = st.time_input(field, value=datetime.strptime(current_time, "%H:%M").time(), key=field_key)
             elif field == "UTC Offset":
                 value = st.text_input(field, value=utc_offset, key=field_key)
             elif field == "From Port":
