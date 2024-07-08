@@ -315,6 +315,9 @@ def create_fields(fields, prefix):
             else:
                 value = st.text_input(field, key=field_key)
 
+    # Check if we need to display the Boiler message after all fields have been processed
+    if me_total_consumption > 15 and not boiler_message_shown:
+        st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
 
 
 def create_form(report_type):
