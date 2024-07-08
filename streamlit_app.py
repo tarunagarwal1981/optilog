@@ -1,10 +1,8 @@
 import streamlit as st
 import openai
-from datetime import datetime, time
+from datetime import datetime
 import pytz
-import json
 import os
-import re
 import random
 import string
 
@@ -50,6 +48,13 @@ st.markdown("""
         font-size: 0.8em;
         color: #666;
         margin-bottom: 2px;
+    }
+    .small-warning {
+        font-size: 0.8em;
+        color: #b20000;
+        background-color: #ffe5e5;
+        border-radius: 5px;
+        padding: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -128,7 +133,7 @@ VALIDATION_RULES = {
     "AE Other (mt)": {"min": 0, "max": 3},
     "Boiler LFO (mt)": {"min": 0, "max": 4},
     "Boiler MGO (mt)": {"min": 0, "max": 4},
-    "Boiler LNG (mt)": {"min": 0, "max": 4},
+        "Boiler LNG (mt)": {"min": 0, "max": 4},
     "Boiler Other (mt)": {"min": 0, "max": 4},
 }
 
@@ -204,35 +209,20 @@ def create_fields(fields, prefix):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
-            # Add a short prompt above the field
-            #st.markdown(f'<p class="field-prompt">{field}</p>', unsafe_allow_html=True)
-            
-            if field == "Vessel Name":
-                st.text_input(field, value=generate_random_vessel_name(), key=field_key)
-            elif field == "Vessel IMO":
-                st.text_input(field, value=generate_random_imo(), key=field_key)
-            elif "Date" in field:
-                st.date_input(field, key=field_key)
-            elif "Time" in field:
-                st.time_input(field, key=field_key)
-            elif field in VALIDATION_RULES:
+            if field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
                 value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
-                if value < min_val or value > max_val:
-                    st.warning(f"{field} should be between {min_val} and {max_val}")
             elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
-                st.number_input(field, key=field_key)
+                value = st.number_input(field, key=field_key)
             elif "Direction" in field and "degrees" not in field:
-                st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
+                value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
             else:
-                st.text_input(field, key=field_key)
-            
-            # Add specific validation for Main Engine consumption
+                value = st.text_input(field, key=field_key)
+
             if field.startswith("ME ") and field.endswith(" (mt)"):
                 value = st.session_state.get(field_key, 0)
                 if value > 15:
-                    st.warning("Since ME is running at more than 50% load, Boiler consumption is expected to be zero.")
-
+                    st.session_state[f"{prefix}_boiler_warning"] = True
 
 def create_form(report_type):
     st.header(f"New {report_type}")
@@ -257,6 +247,9 @@ def create_form(report_type):
             else:
                 st.error(f"Unexpected field type for section {section}: {type(fields)}")
 
+    if 'boiler_warning' in st.session_state:
+        st.markdown('<p class="small-warning">Since ME is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
+
     if st.button("Submit Report"):
         if validate_report(report_type):
             st.success(f"{report_type} submitted successfully!")
@@ -264,12 +257,10 @@ def create_form(report_type):
         else:
             st.error("Please correct the errors in the report before submitting.")
     return False
-    
+
 def validate_report(report_type):
-    # Add your validation logic here
-    # For example, checking if all required fields are filled
-    # and if the data is consistent (e.g., ROB calculations)
-    
+    # Validation logic here
+    # For example, checking if all required fields are filled and if the data is consistent (e.g., ROB calculations)
     # Placeholder for ROB validation
     fuel_types = ["LFO", "MGO", "LNG", "Other"]
     total_rob = 0
@@ -334,6 +325,7 @@ def create_chatbot(last_reports):
             if f"Agreed. The form for {report_type}" in response:
                 if is_valid_report_sequence(last_reports, report_type):
                     st.session_state.current_report_type = report_type
+                    st.session_state.show_form = True
                     break
                 else:
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
