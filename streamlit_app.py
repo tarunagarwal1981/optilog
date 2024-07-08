@@ -59,7 +59,7 @@ st.markdown("""
     .info-message {
         font-size: 12px;
         color: #ffffff;
-        background-color: #4CAF50;
+        background-color: #9C27B0;
         padding: 5px;
         border-radius: 3px;
         margin-top: 5px;
@@ -229,6 +229,9 @@ def generate_random_consumption():
 
 def create_fields(fields, prefix):
     cols = st.columns(4)  # Create 4 columns
+    me_total_consumption = 0
+    ae_total_consumption = 0
+    
     for i, field in enumerate(fields):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
@@ -254,15 +257,37 @@ def create_fields(fields, prefix):
                 if i % 4 == 3:  # After every 4 fields (i.e., after completing lat/long input)
                     st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
             
-            elif field in ["ME LFO (mt)", "AE LFO (mt)"]:
+            elif field in ["ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)"]:
                 if "consumption" not in st.session_state:
                     st.session_state.consumption = generate_random_consumption()
                 me_lfo, ae_lfo = st.session_state.consumption
                 
                 if field == "ME LFO (mt)":
                     value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
-                elif field == "AE LFO (mt)":
+                else:
+                    value = st.number_input(field, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
+                
+                me_total_consumption += value
+                
+                if field == "ME Other (mt)":  # After all ME consumption fields
+                    if me_total_consumption > 25:
+                        st.markdown('<p class="info-message">Total ME consumption exceeds expected consumption of 25.</p>', unsafe_allow_html=True)
+                    if me_total_consumption > 15:
+                        st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
+                
+                st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+            
+            elif field in ["AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)"]:
+                if field == "AE LFO (mt)":
                     value = st.number_input(field, value=ae_lfo, min_value=0.0, max_value=3.0, step=0.1, key=field_key)
+                else:
+                    value = st.number_input(field, min_value=0.0, max_value=3.0, step=0.1, key=field_key)
+                
+                ae_total_consumption += value
+                
+                if field == "AE Other (mt)":  # After all AE consumption fields
+                    if ae_total_consumption > 3:
+                        st.markdown('<p class="info-message">Total AE consumption exceeds expected consumption of 3.</p>', unsafe_allow_html=True)
                 
                 st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
             
@@ -283,12 +308,6 @@ def create_fields(fields, prefix):
                 value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
             else:
                 value = st.text_input(field, key=field_key)
-
-    # Check Main Engine total consumption and display Boiler message if needed
-    me_total_consumption = sum(st.session_state.get(f"{prefix}_main_engine_{fuel.lower()}_(mt)", 0) for fuel in ["LFO", "MGO", "LNG", "Other"])
-    if me_total_consumption > 15 and not st.session_state.get("boiler_message_shown", False):
-        st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
-        st.session_state.boiler_message_shown = True
 
 def create_form(report_type):
     st.header(f"New {report_type}")
@@ -455,4 +474,4 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    main()
+    main()    
