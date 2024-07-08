@@ -6,6 +6,7 @@ import os
 import random
 import string
 
+
 PORTS = [
     "Singapore", "Rotterdam", "Shanghai", "Ningbo-Zhoushan", "Guangzhou Harbor", "Busan",
     "Qingdao", "Hong Kong", "Tianjin", "Port Klang", "Antwerp", "Dubai Ports", "Xiamen",
@@ -248,10 +249,10 @@ def create_fields(fields, prefix):
     me_lfo, ae_lfo = st.session_state.consumption
     
     # Get current date, time, and UTC offset
-    now = datetime.datetime.now()
+    now = datetime.now()
     current_date = now.strftime("%Y-%m-%d")
     current_time = now.strftime("%H:%M")
-    utc_offset = datetime.datetime.now(pytz.timezone('UTC')).astimezone().strftime('%z')
+    utc_offset = datetime.now(pytz.timezone('UTC')).astimezone().strftime('%z')
     
     # Generate random voyage data
     from_port = random.choice(PORTS)
