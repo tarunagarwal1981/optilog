@@ -58,8 +58,8 @@ st.markdown("""
     }
     .info-message {
         font-size: 12px;
-        color: #ffffff;
-        background-color: #9C27B0;
+        color: #0066cc;
+        background-color: #e6f2ff;
         padding: 5px;
         border-radius: 3px;
         margin-top: 5px;
@@ -231,6 +231,9 @@ def create_fields(fields, prefix):
     cols = st.columns(4)  # Create 4 columns
     me_total_consumption = 0
     ae_total_consumption = 0
+    me_fields_processed = False
+    ae_fields_processed = False
+    boiler_message_shown = False
     
     if "consumption" not in st.session_state:
         st.session_state.consumption = generate_random_consumption()
@@ -269,11 +272,11 @@ def create_fields(fields, prefix):
                 
                 me_total_consumption += value
                 
-                if field == "ME Other (mt)":  # After all ME consumption fields
+                if field == "ME Other (mt)" and not me_fields_processed:
                     if me_total_consumption > 25:
                         st.markdown('<p class="info-message">Total ME consumption exceeds expected consumption of 25.</p>', unsafe_allow_html=True)
-                
-                st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                    me_fields_processed = True
             
             elif field in ["AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)"]:
                 if field == "AE LFO (mt)":
@@ -283,18 +286,19 @@ def create_fields(fields, prefix):
                 
                 ae_total_consumption += value
                 
-                if field == "AE Other (mt)":  # After all AE consumption fields
+                if field == "AE Other (mt)" and not ae_fields_processed:
                     if ae_total_consumption > 3:
                         st.markdown('<p class="info-message">Total AE consumption exceeds expected consumption of 3.</p>', unsafe_allow_html=True)
-                
-                st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                    ae_fields_processed = True
             
             elif field.startswith("Boiler"):
                 value = st.number_input(field, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
                 
                 # Display Boiler consumption message if ME total consumption > 15
-                if me_total_consumption > 15:
+                if me_total_consumption > 15 and not boiler_message_shown:
                     st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
+                    boiler_message_shown = True
             
             elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
