@@ -356,7 +356,7 @@ def create_fields(fields, prefix, report_type):
         st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
 
     # Display AIS position message after processing all fields
-    st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
+    #st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
 
 
 def create_form(report_type):
