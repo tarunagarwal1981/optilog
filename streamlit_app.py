@@ -49,8 +49,13 @@ st.markdown("""
         color: #666;
         margin-bottom: 2px;
     }
+    .small-warning, .small-message {
+        font-size: 8px;
+        color: #666;
+        margin-top: -10px;
+        padding-bottom: 10px;
+    }
     .small-warning {
-        font-size: 0.8em;
         color: #b20000;
         background-color: #ffe5e5;
         border-radius: 5px;
@@ -133,7 +138,7 @@ VALIDATION_RULES = {
     "AE Other (mt)": {"min": 0, "max": 3},
     "Boiler LFO (mt)": {"min": 0, "max": 4},
     "Boiler MGO (mt)": {"min": 0, "max": 4},
-        "Boiler LNG (mt)": {"min": 0, "max": 4},
+    "Boiler LNG (mt)": {"min": 0, "max": 4},
     "Boiler Other (mt)": {"min": 0, "max": 4},
 }
 
@@ -203,15 +208,66 @@ def get_ai_response(user_input, last_reports):
     except Exception as e:
         return f"I'm sorry, but I encountered an error while processing your request: {str(e)}. Please try again later."
 
+def generate_random_position():
+    lat_deg = random.randint(0, 89)
+    lat_min = round(random.uniform(0, 59.99), 2)
+    lat_dir = random.choice(['N', 'S'])
+    lon_deg = random.randint(0, 179)
+    lon_min = round(random.uniform(0, 59.99), 2)
+    lon_dir = random.choice(['E', 'W'])
+    return lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir
+
+def generate_random_consumption():
+    me_lfo = round(random.uniform(20, 25), 1)
+    ae_lfo = round(random.uniform(2, 3), 1)
+    boiler_lfo = round(random.uniform(1, 2), 1)
+    return me_lfo, ae_lfo, boiler_lfo
+
 def create_fields(fields, prefix):
     cols = st.columns(4)  # Create 4 columns
     for i, field in enumerate(fields):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
-            if field in VALIDATION_RULES:
+            if field in ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"]:
+                if "position" not in st.session_state:
+                    st.session_state.position = generate_random_position()
+                lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir = st.session_state.position
+                
+                if field == "Latitude Degrees":
+                    value = st.number_input(field, value=lat_deg, key=field_key)
+                elif field == "Latitude Minutes":
+                    value = st.number_input(field, value=lat_min, key=field_key)
+                elif field == "Latitude Direction":
+                    value = st.selectbox(field, options=["N", "S"], index=["N", "S"].index(lat_dir), key=field_key)
+                elif field == "Longitude Degrees":
+                    value = st.number_input(field, value=lon_deg, key=field_key)
+                elif field == "Longitude Minutes":
+                    value = st.number_input(field, value=lon_min, key=field_key)
+                elif field == "Longitude Direction":
+                    value = st.selectbox(field, options=["E", "W"], index=["E", "W"].index(lon_dir), key=field_key)
+                
+                if i % 4 == 3:  # After every 4 fields (i.e., after completing lat/long input)
+                    st.markdown('<p class="small-message">Current AIS position</p>', unsafe_allow_html=True)
+            
+            elif field in ["ME LFO (mt)", "AE LFO (mt)", "Boiler LFO (mt)"]:
+                if "consumption" not in st.session_state:
+                    st.session_state.consumption = generate_random_consumption()
+                me_lfo, ae_lfo, boiler_lfo = st.session_state.consumption
+                
+                if field == "ME LFO (mt)":
+                    value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
+                elif field == "AE LFO (mt)":
+                    value = st.number_input(field, value=ae_lfo, min_value=0.0, max_value=3.0, step=0.1, key=field_key)
+                elif field == "Boiler LFO (mt)":
+                    value = st.number_input(field, value=boiler_lfo, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
+                
+                st.markdown('<p class="small-message">MFM figures since last report</p>', unsafe_allow_html=True)
+            
+            elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
                 value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
+                st.markdown(f'<p class="small-warning">Value must be less than or equal to {max_val}</p>', unsafe_allow_html=True)
             elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
                 value = st.number_input(field, key=field_key)
             elif "Direction" in field and "degrees" not in field:
