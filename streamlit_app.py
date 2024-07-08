@@ -6,6 +6,14 @@ import os
 import random
 import string
 
+PORTS = [
+    "Singapore", "Rotterdam", "Shanghai", "Ningbo-Zhoushan", "Guangzhou Harbor", "Busan",
+    "Qingdao", "Hong Kong", "Tianjin", "Port Klang", "Antwerp", "Dubai Ports", "Xiamen",
+    "Kaohsiung", "Hamburg", "Los Angeles", "Tanjung Pelepas", "Laem Chabang", "New York-New Jersey",
+    "Dalian", "Tanjung Priok", "Valencia", "Colombo", "Ho Chi Minh City", "Algeciras"
+]
+
+
 # Set page config
 st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
 
@@ -239,11 +247,38 @@ def create_fields(fields, prefix):
         st.session_state.consumption = generate_random_consumption()
     me_lfo, ae_lfo = st.session_state.consumption
     
+    # Get current date, time, and UTC offset
+    now = datetime.datetime.now()
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M")
+    utc_offset = datetime.datetime.now(pytz.timezone('UTC')).astimezone().strftime('%z')
+    
+    # Generate random voyage data
+    from_port = random.choice(PORTS)
+    to_port = random.choice([p for p in PORTS if p != from_port])
+    voyage_type = random.choice(['L', 'B'])
+    voyage_id = f"{random.randint(10, 99)}{voyage_type}"
+    segment_id = str(random.randint(1, 5))
+    
     for i, field in enumerate(fields):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
-            if field in ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"]:
+            if field == "Local Date":
+                value = st.date_input(field, value=datetime.datetime.strptime(current_date, "%Y-%m-%d"), key=field_key)
+            elif field == "Local Time":
+                value = st.time_input(field, value=datetime.datetime.strptime(current_time, "%H:%M").time(), key=field_key)
+            elif field == "UTC Offset":
+                value = st.text_input(field, value=utc_offset, key=field_key)
+            elif field == "From Port":
+                value = st.selectbox(field, options=PORTS, index=PORTS.index(from_port), key=field_key)
+            elif field == "To Port":
+                value = st.selectbox(field, options=PORTS, index=PORTS.index(to_port), key=field_key)
+            elif field == "Voyage ID":
+                value = st.text_input(field, value=voyage_id, key=field_key)
+            elif field == "Segment ID":
+                value = st.text_input(field, value=segment_id, key=field_key)
+            elif field in ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"]:
                 if "position" not in st.session_state:
                     st.session_state.position = generate_random_position()
                 lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir = st.session_state.position
@@ -277,7 +312,6 @@ def create_fields(fields, prefix):
                         st.markdown('<p class="info-message">Total ME consumption exceeds expected consumption of 25.</p>', unsafe_allow_html=True)
                     st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
                     me_fields_processed = True
-            
             elif field in ["AE LFO (mt)", "AE MGO (mt)", "AE LNG (mt)", "AE Other (mt)"]:
                 if field == "AE LFO (mt)":
                     value = st.number_input(field, value=ae_lfo, min_value=0.0, max_value=3.0, step=0.1, key=field_key)
@@ -291,7 +325,6 @@ def create_fields(fields, prefix):
                         st.markdown('<p class="info-message">Total AE consumption exceeds expected consumption of 3.</p>', unsafe_allow_html=True)
                     st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
                     ae_fields_processed = True
-            
             elif field.startswith("Boiler"):
                 value = st.number_input(field, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
                 
@@ -299,7 +332,6 @@ def create_fields(fields, prefix):
                 if me_total_consumption > 15 and not boiler_message_shown:
                     st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
                     boiler_message_shown = True
-            
             elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
                 value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
@@ -307,7 +339,6 @@ def create_fields(fields, prefix):
                 # Only show the warning if the value exceeds the maximum
                 if value > max_val:
                     st.markdown(f'<p class="small-warning">Value must be less than or equal to {max_val}</p>', unsafe_allow_html=True)
-            
             elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
                 value = st.number_input(field, key=field_key)
             elif "Direction" in field and "degrees" not in field:
