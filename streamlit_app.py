@@ -49,17 +49,18 @@ st.markdown("""
         color: #666;
         margin-bottom: 2px;
     }
-    .small-warning, .small-message {
-        font-size: 8px;
-        color: #666;
-        margin-top: -10px;
-        padding-bottom: 10px;
-    }
     .small-warning {
+        font-size: 8px;
         color: #b20000;
         background-color: #ffe5e5;
         border-radius: 5px;
         padding: 5px;
+    }
+    .info-message {
+        font-size: 11px;
+        color: #666;
+        margin-top: -10px;
+        padding-bottom: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -248,7 +249,7 @@ def create_fields(fields, prefix):
                     value = st.selectbox(field, options=["E", "W"], index=["E", "W"].index(lon_dir), key=field_key)
                 
                 if i % 4 == 3:  # After every 4 fields (i.e., after completing lat/long input)
-                    st.markdown('<p class="small-message">Current AIS position</p>', unsafe_allow_html=True)
+                    st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
             
             elif field in ["ME LFO (mt)", "AE LFO (mt)", "Boiler LFO (mt)"]:
                 if "consumption" not in st.session_state:
@@ -262,12 +263,20 @@ def create_fields(fields, prefix):
                 elif field == "Boiler LFO (mt)":
                     value = st.number_input(field, value=boiler_lfo, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
                 
-                st.markdown('<p class="small-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
+                
+                # Check if the entered value exceeds the maximum allowed value
+                if field in VALIDATION_RULES and value > VALIDATION_RULES[field]["max"]:
+                    st.markdown(f'<p class="small-warning">Value must be less than or equal to {VALIDATION_RULES[field]["max"]}</p>', unsafe_allow_html=True)
             
             elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
                 value = st.number_input(field, min_value=min_val, max_value=max_val, key=field_key)
-                st.markdown(f'<p class="small-warning">Value must be less than or equal to {max_val}</p>', unsafe_allow_html=True)
+                
+                # Only show the warning if the value exceeds the maximum
+                if value > max_val:
+                    st.markdown(f'<p class="small-warning">Value must be less than or equal to {max_val}</p>', unsafe_allow_html=True)
+            
             elif any(unit in field for unit in ["(%)", "(mt)", "(kW)", "(°C)", "(bar)", "(g/kWh)", "(knots)", "(meters)", "(seconds)", "(degrees)"]):
                 value = st.number_input(field, key=field_key)
             elif "Direction" in field and "degrees" not in field:
