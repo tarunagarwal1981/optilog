@@ -14,6 +14,9 @@ PORTS = [
     "Dalian", "Tanjung Priok", "Valencia", "Colombo", "Ho Chi Minh City", "Algeciras"
 ]
 
+VESSEL_PREFIXES = ["MV", "SS", "MT", "MSC", "CMA CGM", "OOCL", "Maersk", "Evergreen", "Cosco", "NYK"]
+VESSEL_NAMES = ["Horizon", "Voyager", "Pioneer", "Adventurer", "Explorer", "Discovery", "Navigator", "Endeavour", "Challenger", "Trailblazer"]
+
 
 # Set page config
 st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
@@ -183,14 +186,6 @@ Provide concise and helpful guidance throughout the report creation process. If 
 Remember to provide appropriate reminders and follow-up suggestions based on the current report context and the logical sequence of maritime operations.
 """
 
-def generate_random_vessel_name():
-    adjectives = ['Swift', 'Majestic', 'Brave', 'Stellar', 'Royal']
-    nouns = ['Voyager', 'Explorer', 'Mariner', 'Adventurer', 'Navigator']
-    return f"{random.choice(adjectives)} {random.choice(nouns)}"
-
-def generate_random_imo():
-    return ''.join(random.choices(string.digits, k=7))
-
 def get_ai_response(user_input, last_reports):
     current_time = datetime.now(pytz.utc).strftime("%H:%M:%S")
     
@@ -236,7 +231,14 @@ def generate_random_consumption():
     ae_lfo = round(random.uniform(2, 3), 1)
     return me_lfo, ae_lfo
 
-def create_fields(fields, prefix):
+
+def generate_random_vessel_name():
+    return f"{random.choice(VESSEL_PREFIXES)} {random.choice(VESSEL_NAMES)}"
+
+def generate_random_imo():
+    return ''.join(random.choices(string.digits, k=7))
+
+def create_fields(fields, prefix, report_type):
     cols = st.columns(4)  # Create 4 columns
     me_total_consumption = 0
     ae_total_consumption = 0
@@ -254,18 +256,24 @@ def create_fields(fields, prefix):
     current_time = now.strftime("%H:%M")
     utc_offset = datetime.now(pytz.timezone('UTC')).astimezone().strftime('%z')
     
-    # Generate random voyage data
+    # Generate random voyage and vessel data
     from_port = random.choice(PORTS)
     to_port = random.choice([p for p in PORTS if p != from_port])
     voyage_type = random.choice(['L', 'B'])
     voyage_id = f"{random.randint(10, 99)}{voyage_type}"
     segment_id = str(random.randint(1, 5))
+    vessel_name = generate_random_vessel_name()
+    imo_number = generate_random_imo()
     
     for i, field in enumerate(fields):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
             
-            if field == "Local Date":
+            if field == "Vessel Name":
+                value = st.text_input(field, value=vessel_name, key=field_key)
+            elif field == "Vessel IMO":
+                value = st.text_input(field, value=imo_number, key=field_key)
+            elif field == "Local Date":
                 value = st.date_input(field, value=datetime.strptime(current_date, "%Y-%m-%d"), key=field_key)
             elif field == "Local Time":
                 value = st.time_input(field, value=datetime.strptime(current_time, "%H:%M").time(), key=field_key)
@@ -279,27 +287,8 @@ def create_fields(fields, prefix):
                 value = st.text_input(field, value=voyage_id, key=field_key)
             elif field == "Segment ID":
                 value = st.text_input(field, value=segment_id, key=field_key)
-            elif field in ["Latitude Degrees", "Latitude Minutes", "Latitude Direction", "Longitude Degrees", "Longitude Minutes", "Longitude Direction"]:
-                if "position" not in st.session_state:
-                    st.session_state.position = generate_random_position()
-                lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir = st.session_state.position
-                
-                if field == "Latitude Degrees":
-                    value = st.number_input(field, value=lat_deg, key=field_key)
-                elif field == "Latitude Minutes":
-                    value = st.number_input(field, value=lat_min, key=field_key)
-                elif field == "Latitude Direction":
-                    value = st.selectbox(field, options=["N", "S"], index=["N", "S"].index(lat_dir), key=field_key)
-                elif field == "Longitude Degrees":
-                    value = st.number_input(field, value=lon_deg, key=field_key)
-                elif field == "Longitude Minutes":
-                    value = st.number_input(field, value=lon_min, key=field_key)
-                elif field == "Longitude Direction":
-                    value = st.selectbox(field, options=["E", "W"], index=["E", "W"].index(lon_dir), key=field_key)
-                
-                if i % 4 == 3:  # After every 4 fields (i.e., after completing lat/long input)
-                    st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
-            
+            elif field == "Event Type":
+                value = st.text_input(field, value=report_type, key=field_key)
             elif field in ["ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)"]:
                 if field == "ME LFO (mt)":
                     value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
@@ -362,16 +351,16 @@ def create_form(report_type):
         return False
     
     for section in report_structure:
-        with st.expander(section, expanded=False):  # Set expanded to False to collapse by default
+        with st.expander(section, expanded=False):
             st.subheader(section)
             fields = SECTION_FIELDS.get(section, {})
             
             if isinstance(fields, dict):
                 for subsection, subfields in fields.items():
                     st.subheader(subsection)
-                    create_fields(subfields, f"{report_type}_{section}_{subsection}")
+                    create_fields(subfields, f"{report_type}_{section}_{subsection}", report_type)
             elif isinstance(fields, list):
-                create_fields(fields, f"{report_type}_{section}")
+                create_fields(fields, f"{report_type}_{section}", report_type)
             else:
                 st.error(f"Unexpected field type for section {section}: {type(fields)}")
 
@@ -382,7 +371,7 @@ def create_form(report_type):
         else:
             st.error("Please correct the errors in the report before submitting.")
     return False
-
+    
 def validate_report(report_type):
     # Validation logic here
     # For example, checking if all required fields are filled and if the data is consistent (e.g., ROB calculations)
