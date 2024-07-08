@@ -250,6 +250,9 @@ def create_fields(fields, prefix, report_type):
         st.session_state.consumption = generate_random_consumption()
     me_lfo, ae_lfo = st.session_state.consumption
     
+    # Generate random position
+    lat_deg, lat_min, lat_dir, lon_deg, lon_min, lon_dir = generate_random_position()
+    
     # Get current date, time, and UTC offset
     now = datetime.now()
     current_date = now.strftime("%Y-%m-%d")
@@ -289,6 +292,18 @@ def create_fields(fields, prefix, report_type):
                 value = st.text_input(field, value=segment_id, key=field_key)
             elif field == "Event Type":
                 value = st.text_input(field, value=report_type, key=field_key)
+            elif field == "Latitude Degrees":
+                value = st.number_input(field, value=lat_deg, min_value=0, max_value=89, key=field_key)
+            elif field == "Latitude Minutes":
+                value = st.number_input(field, value=lat_min, min_value=0.0, max_value=59.99, format="%.2f", key=field_key)
+            elif field == "Latitude Direction":
+                value = st.selectbox(field, options=["N", "S"], index=["N", "S"].index(lat_dir), key=field_key)
+            elif field == "Longitude Degrees":
+                value = st.number_input(field, value=lon_deg, min_value=0, max_value=179, key=field_key)
+            elif field == "Longitude Minutes":
+                value = st.number_input(field, value=lon_min, min_value=0.0, max_value=59.99, format="%.2f", key=field_key)
+            elif field == "Longitude Direction":
+                value = st.selectbox(field, options=["E", "W"], index=["E", "W"].index(lon_dir), key=field_key)
             elif field in ["ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)"]:
                 if field == "ME LFO (mt)":
                     value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
@@ -339,6 +354,9 @@ def create_fields(fields, prefix, report_type):
     # Check if we need to display the Boiler message after all fields have been processed
     if me_total_consumption > 15 and not boiler_message_shown:
         st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
+
+    # Display AIS position message after processing all fields
+    st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
 
 
 def create_form(report_type):
