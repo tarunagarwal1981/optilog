@@ -232,6 +232,10 @@ def create_fields(fields, prefix):
     me_total_consumption = 0
     ae_total_consumption = 0
     
+    if "consumption" not in st.session_state:
+        st.session_state.consumption = generate_random_consumption()
+    me_lfo, ae_lfo = st.session_state.consumption
+    
     for i, field in enumerate(fields):
         with cols[i % 4]:  # This will cycle through the columns
             field_key = f"{prefix}_{field.lower().replace(' ', '_')}"
@@ -258,10 +262,6 @@ def create_fields(fields, prefix):
                     st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
             
             elif field in ["ME LFO (mt)", "ME MGO (mt)", "ME LNG (mt)", "ME Other (mt)"]:
-                if "consumption" not in st.session_state:
-                    st.session_state.consumption = generate_random_consumption()
-                me_lfo, ae_lfo = st.session_state.consumption
-                
                 if field == "ME LFO (mt)":
                     value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
                 else:
@@ -308,6 +308,8 @@ def create_fields(fields, prefix):
                 value = st.selectbox(field, options=["N", "NE", "E", "SE", "S", "SW", "W", "NW"], key=field_key)
             else:
                 value = st.text_input(field, key=field_key)
+
+
 
 def create_form(report_type):
     st.header(f"New {report_type}")
