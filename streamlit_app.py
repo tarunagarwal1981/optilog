@@ -57,10 +57,14 @@ st.markdown("""
         padding: 5px;
     }
     .info-message {
-        font-size: 11px;
-        color: #666;
-        margin-top: -10px;
-        padding-bottom: 10px;
+        font-size: 12px;
+        color: #ffffff;
+        background-color: #4CAF50;
+        padding: 5px;
+        border-radius: 3px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        display: inline-block;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -221,8 +225,7 @@ def generate_random_position():
 def generate_random_consumption():
     me_lfo = round(random.uniform(20, 25), 1)
     ae_lfo = round(random.uniform(2, 3), 1)
-    boiler_lfo = round(random.uniform(1, 2), 1)
-    return me_lfo, ae_lfo, boiler_lfo
+    return me_lfo, ae_lfo
 
 def create_fields(fields, prefix):
     cols = st.columns(4)  # Create 4 columns
@@ -251,23 +254,20 @@ def create_fields(fields, prefix):
                 if i % 4 == 3:  # After every 4 fields (i.e., after completing lat/long input)
                     st.markdown('<p class="info-message">Current AIS position</p>', unsafe_allow_html=True)
             
-            elif field in ["ME LFO (mt)", "AE LFO (mt)", "Boiler LFO (mt)"]:
+            elif field in ["ME LFO (mt)", "AE LFO (mt)"]:
                 if "consumption" not in st.session_state:
                     st.session_state.consumption = generate_random_consumption()
-                me_lfo, ae_lfo, boiler_lfo = st.session_state.consumption
+                me_lfo, ae_lfo = st.session_state.consumption
                 
                 if field == "ME LFO (mt)":
                     value = st.number_input(field, value=me_lfo, min_value=0.0, max_value=25.0, step=0.1, key=field_key)
                 elif field == "AE LFO (mt)":
                     value = st.number_input(field, value=ae_lfo, min_value=0.0, max_value=3.0, step=0.1, key=field_key)
-                elif field == "Boiler LFO (mt)":
-                    value = st.number_input(field, value=boiler_lfo, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
                 
                 st.markdown('<p class="info-message">MFM figures since last report</p>', unsafe_allow_html=True)
-                
-                # Check if the entered value exceeds the maximum allowed value
-                if field in VALIDATION_RULES and value > VALIDATION_RULES[field]["max"]:
-                    st.markdown(f'<p class="small-warning">Value must be less than or equal to {VALIDATION_RULES[field]["max"]}</p>', unsafe_allow_html=True)
+            
+            elif field.startswith("Boiler"):
+                value = st.number_input(field, min_value=0.0, max_value=4.0, step=0.1, key=field_key)
             
             elif field in VALIDATION_RULES:
                 min_val, max_val = VALIDATION_RULES[field]["min"], VALIDATION_RULES[field]["max"]
@@ -284,10 +284,11 @@ def create_fields(fields, prefix):
             else:
                 value = st.text_input(field, key=field_key)
 
-            if field.startswith("ME ") and field.endswith(" (mt)"):
-                value = st.session_state.get(field_key, 0)
-                if value > 15:
-                    st.session_state[f"{prefix}_boiler_warning"] = True
+    # Check Main Engine total consumption and display Boiler message if needed
+    me_total_consumption = sum(st.session_state.get(f"{prefix}_main_engine_{fuel.lower()}_(mt)", 0) for fuel in ["LFO", "MGO", "LNG", "Other"])
+    if me_total_consumption > 15 and not st.session_state.get("boiler_message_shown", False):
+        st.markdown('<p class="info-message">Since Main Engine is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
+        st.session_state.boiler_message_shown = True
 
 def create_form(report_type):
     st.header(f"New {report_type}")
@@ -311,9 +312,6 @@ def create_form(report_type):
                 create_fields(fields, f"{report_type}_{section}")
             else:
                 st.error(f"Unexpected field type for section {section}: {type(fields)}")
-
-    if 'boiler_warning' in st.session_state:
-        st.markdown('<p class="small-warning">Since ME is running at more than 50% load, Boiler consumption is expected to be zero.</p>', unsafe_allow_html=True)
 
     if st.button("Submit Report"):
         if validate_report(report_type):
