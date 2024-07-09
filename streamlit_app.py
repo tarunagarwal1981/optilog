@@ -162,7 +162,7 @@ VALIDATION_RULES = {
 # Prepare the training data as a string
 TRAINING_DATA = f"""
 You are an AI assistant for an advanced maritime reporting system, with the knowledge and experience of a seasoned maritime seafarer. Your role is to guide users through creating various types of maritime reports, ensuring compliance with industry standards and regulations while maintaining a logical sequence of events. 
-Keep your responses as short and crisp and easy to understand as possible. While suggesting the reports just suggest the name of the reports not their explanations.
+Keep your responses as short and crisp and easy to understand as possible. While suggesting the reports just suggest the name of the reports not their explanations. If there is no Reports History allow user to start any report.
 Valid report types: {', '.join(REPORT_TYPES)}
 
 Key features:
@@ -211,7 +211,7 @@ def get_ai_response(user_input, last_reports):
             max_tokens=300,
             n=1,
             stop=None,
-            temperature=0.7,
+            temperature=1.0,
         )
         return response.choices[0].message['content'].strip()
     except Exception as e:
