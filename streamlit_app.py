@@ -21,6 +21,8 @@ st.markdown("""
         .chatbot-container {
             width: 50%;
             margin-left: 20px;
+            overflow-y: scroll;
+            height: 600px;
         }
         .contact-form-container {
             width: 30%;
@@ -35,24 +37,29 @@ col1, col2 = st.columns(2)
 # Create a container for the chatbot in the first column
 with col1:
     st.markdown('<div class="chatbot-container">', unsafe_allow_html=True)
-    st.title("💬 Chatbot")
+
+    # Create a container for the chat history
+    chat_history = st.container()
+
+    # Create a text input box for user input
+    user_input = st.text_input("Type your message...")
+
+    # Create a button to submit the user input
+    submit_button = st.button("Send")
 
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
-    # Display messages in the chatbot section
-    for msg in st.session_state.messages:
-        st.chat_message(msg["role"]).write(msg["content"])
-
-    if prompt := st.chat_input():
+    # When the user submits their input, update the chat history
+    if submit_button:
         if not openai_api_key:
             st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
             st.stop()
 
         # Set the API key for the openai module
         openai.api_key = openai_api_key
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        st.chat_message("user").write(user_input)
         
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -62,6 +69,15 @@ with col1:
         msg = response.choices[0].message['content']
         st.session_state.messages.append({"role": "assistant", "content": msg})
         st.chat_message("assistant").write(msg)
+
+    # Display the chat history
+    with chat_history:
+        for msg in st.session_state.messages:
+            st.chat_message(msg["role"]).write(msg["content"])
+
+    # Display the text input box and button
+    st.write(user_input)
+    st.write(submit_button)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
