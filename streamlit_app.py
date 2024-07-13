@@ -18,141 +18,44 @@ VESSEL_PREFIXES = ["MV", "SS", "MT", "MSC", "CMA CGM", "OOCL", "Maersk", "Evergr
 VESSEL_NAMES = ["Horizon", "Voyager", "Pioneer", "Adventurer", "Explorer", "Discovery", "Navigator", "Endeavour", "Challenger", "Trailblazer"]
 
 
-# Set page config
+# Update the page config to use a wide layout
 st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
 
-# Custom CSS for compact layout, history panel, and field prompts
+# Updated CSS
 st.markdown("""
 <style>
-    /* General layout styles */
     .reportSection { 
-        padding-right: 1rem; 
+        width: 70%;
+        float: left;
+        padding-right: 20px;
     }
     .chatSection { 
-        padding-left: 1rem; 
+        width: 30%;
+        float: right;
+        height: 100vh;
+        overflow-y: auto;
+        padding-left: 20px;
         border-left: 1px solid #e0e0e0;
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 80px);  /* Adjust based on your layout */
     }
-    .main .block-container { 
-        padding-top: 2rem; 
-        padding-bottom: 2rem; 
-        max-width: 100%; 
-    }
-
-    /* Header styles */
-    h1, h2, h3 { 
-        margin-top: 0; 
-        font-size: 1.5em; 
-        line-height: 1.3; 
-        padding: 0.5rem 0; 
-    }
-
-    /* Form element styles */
-    .stButton > button { 
-        width: 100%; 
-    }
-    .stNumberInput, .stTextInput, .stSelectbox { 
-        padding-bottom: 0.5rem !important; 
-    }
-    .stNumberInput input, .stTextInput input, .stSelectbox select {
-        padding: 0.3rem !important;
-        font-size: 0.9em !important;
-    }
-    .stExpander { 
-        border: none !important; 
-        box-shadow: none !important;
-        margin-bottom: 0.5rem !important;
-    }
-
-    /* Alert styles */
-    .stAlert { 
-        margin-top: 1rem; 
-    }
-
-    /* History panel styles */
-    .history-panel {
-        background-color: #f1f1f1;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        max-width: 300px;
-    }
-    .history-panel h3 {
-        margin-top: 0;
-        margin-bottom: 10px;
-    }
-    .history-select {
-        margin-bottom: 5px;
-    }
-
-    /* Field prompt styles */
-    .field-prompt {
-        font-size: 0.8em;
-        color: #666;
-        margin-bottom: 2px;
-    }
-
-    /* Warning message styles */
-    .small-warning {
-        font-size: 8px;
-        color: #b20000;
-        background-color: #ffe5e5;
-        border-radius: 5px;
-        padding: 5px;
-    }
-
-    /* Info message styles */
-    .info-message {
-        font-size: 12px;
-        color: #0066cc;
-        background-color: #e6f2ff;
-        padding: 5px;
-        border-radius: 3px;
-        margin-top: 5px;
-        margin-bottom: 10px;
-        display: inline-block;
-    }
-
-    /* Chat styles */
     .stChatFloatingInputContainer {
         position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: calc(30% - 2rem);  /* Adjust based on your layout */
-        background-color: white;
+        bottom: 0;
+        right: 0;
+        width: 30%;
+        background-color: #0E1117;
         padding: 1rem;
-        border-top: 1px solid #e0e0e0;
         z-index: 1000;
     }
-
     .stChatMessage {
-        padding: 1rem 0;
+        background-color: #0E1117 !important;
+        border: none !important;
+        padding: 1rem 0 !important;
     }
-
-    /* Ensure chat messages don't overlap with input box */
-    .element-container:last-of-type {
-        margin-bottom: 80px;  /* Adjust based on your input box height */
+    .stChatMessage [data-testid="chatAvatarIcon-user"] {
+        background-color: #FF4B4B !important;
     }
-
-    /* Custom scrollbar for WebKit browsers */
-    .chatSection::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .chatSection::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-
-    .chatSection::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-    }
-
-    .chatSection::-webkit-scrollbar-thumb:hover {
-        background: #555;
+    .stChatMessage [data-testid="chatAvatarIcon-assistant"] {
+        background-color: #FFA500 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -549,8 +452,7 @@ def create_chatbot(last_reports):
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
         
         st.experimental_rerun()
-
-
+        
 def is_valid_report_sequence(last_reports, new_report):
     if not last_reports:
         return True
@@ -598,8 +500,8 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     with col2:
-        create_collapsible_history_panel()
         st.markdown('<div class="chatSection">', unsafe_allow_html=True)
+        create_collapsible_history_panel()
         create_chatbot(st.session_state.report_history)
         
         if st.button("Clear Chat"):
