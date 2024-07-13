@@ -15,7 +15,7 @@ st.markdown("""
             padding-bottom: 1rem;
         }
         .stApp {
-            margin-left: 60%;
+            margin-left: 70%;
         }
         .chatbot-container {
             width: 100%;
