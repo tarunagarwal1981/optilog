@@ -1,6 +1,10 @@
 import streamlit as st
 import openai
 
+# Check if the OpenAI API key is set in secrets
+if "OPENAI_API_KEY" not in st.secrets:
+    st.error("OpenAI API key not found. Please set it in your secrets.")
+    st.stop()
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
@@ -42,10 +46,7 @@ def create_chatbot():
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
     if prompt := st.chat_input():
-        if not openai_api_key:
-            st.info("Please add your OpenAI API key to continue.")
-            st.stop()
-        client = OpenAI(api_key=openai_api_key)
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
@@ -56,14 +57,6 @@ def create_chatbot():
 def main():
     st.set_page_config(layout="wide")
     st.title("Maritime Reporting System")
-
-    # Sidebar for OpenAI API Key
-    with st.sidebar:
-        global openai_api_key
-        openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-        "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-        "[View the source code](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
-        "[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)"
 
     # Create two columns: one for the form (70%) and one for the chatbot (30%)
     col1, col2 = st.columns([0.7, 0.3])
