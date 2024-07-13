@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from datetime import datetime
+import openai
 
 # Use streamlit's secrets management for the OpenAI API key
 if 'OPENAI_API_KEY' not in st.secrets:
@@ -11,7 +12,6 @@ openai_api_key = st.secrets['OPENAI_API_KEY']
 os.environ['OPENAI_API_KEY'] = openai_api_key
 
 # Now import OpenAI after setting the API key
-import OpenAI
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
