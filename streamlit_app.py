@@ -4,7 +4,7 @@ import openai
 # Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-# Add custom CSS to position the chatbot on the right 40% of the page and add form on the left
+# Add custom CSS to position the chatbot on the right 40% of the page, add form on the left, and fix chatbot input at bottom
 st.markdown("""
     <style>
         .main .block-container {
@@ -25,6 +25,22 @@ st.markdown("""
         .right-column {
             width: 40%;
             float: right;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-bottom: 5rem;
+        }
+        .input-container {
+            position: fixed;
+            bottom: 3rem;
+            right: 1rem;
+            width: 38%;
+            background-color: #0E1117;
+            padding: 1rem 0;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -52,25 +68,51 @@ with right_column:
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
+    # Chat container
+    chat_container = st.container()
+
     # Display messages in the chatbot section
-    for msg in st.session_state.messages:
-        st.chat_message(msg["role"]).write(msg["content"])
+    with chat_container:
+        for msg in st.session_state.messages:
+            st.chat_message(msg["role"]).write(msg["content"])
 
-    if prompt := st.chat_input():
-        if not openai_api_key:
-            st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
-            st.stop()
+    # Input container
+    input_container = st.container()
 
-        # Set the API key for the openai module
-        openai.api_key = openai_api_key
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
-        
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.messages
-        )
-        
-        msg = response.choices[0].message['content']
-        st.session_state.messages.append({"role": "assistant", "content": msg})
-        st.chat_message("assistant").write(msg)
+    with input_container:
+        if prompt := st.chat_input("Your message"):
+            if not openai_api_key:
+                st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
+                st.stop()
+
+            # Set the API key for the openai module
+            openai.api_key = openai_api_key
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            
+            with chat_container:
+                st.chat_message("user").write(prompt)
+            
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=st.session_state.messages
+            )
+            
+            msg = response.choices[0].message['content']
+            st.session_state.messages.append({"role": "assistant", "content": msg})
+            
+            with chat_container:
+                st.chat_message("assistant").write(msg)
+
+# Apply custom CSS to fix input at bottom
+st.markdown("""
+    <style>
+        .input-container {
+            position: fixed;
+            bottom: 3rem;
+            right: 1rem;
+            width: 38%;
+            background-color: #0E1117;
+            padding: 1rem 0;
+        }
+    </style>
+""", unsafe_allow_html=True)
