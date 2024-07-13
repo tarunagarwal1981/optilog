@@ -12,7 +12,7 @@ st.markdown("""
             padding-top: 1rem;
             padding-right: 1rem;
             padding-left: 1rem;
-            padding-bottom: 1rem;
+            padding-bottom: 5rem;
         }
         .row-widget.stButton {
             text-align: center;
@@ -25,22 +25,24 @@ st.markdown("""
         .right-column {
             width: 40%;
             float: right;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            position: relative;
+            height: calc(100vh - 80px);
         }
         .chat-container {
-            flex-grow: 1;
+            height: calc(100% - 70px);
             overflow-y: auto;
-            padding-bottom: 5rem;
+            padding-bottom: 70px;
         }
         .input-container {
-            position: fixed;
-            bottom: 3rem;
-            right: 1rem;
-            width: 38%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background-color: #0E1117;
             padding: 1rem 0;
+        }
+        #root > div:nth-child(1) > div > div > div > div > section.main.css-uf99v8.ea3mdgi5 {
+            overflow-y: hidden;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -73,14 +75,20 @@ with right_column:
 
     # Display messages in the chatbot section
     with chat_container:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         for msg in st.session_state.messages:
             st.chat_message(msg["role"]).write(msg["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Input container
     input_container = st.container()
 
     with input_container:
-        if prompt := st.chat_input("Your message"):
+        st.markdown('<div class="input-container">', unsafe_allow_html=True)
+        prompt = st.chat_input("Your message")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if prompt:
             if not openai_api_key:
                 st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
                 st.stop()
@@ -103,16 +111,13 @@ with right_column:
             with chat_container:
                 st.chat_message("assistant").write(msg)
 
-# Apply custom CSS to fix input at bottom
+# Ensure the page doesn't reload on form submission
 st.markdown("""
-    <style>
-        .input-container {
-            position: fixed;
-            bottom: 3rem;
-            right: 1rem;
-            width: 38%;
-            background-color: #0E1117;
-            padding: 1rem 0;
+    <script>
+        var form = window.parent.document.querySelector("form");
+        function handleSubmit(event) {
+            event.preventDefault();
         }
-    </style>
+        form.addEventListener('submit', handleSubmit);
+    </script>
 """, unsafe_allow_html=True)
