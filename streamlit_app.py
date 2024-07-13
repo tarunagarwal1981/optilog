@@ -29,50 +29,55 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Create a container for the chatbot
-st.markdown('<div class="chatbot-container">', unsafe_allow_html=True)
-st.title("💬 Chatbot")
+# Create two columns
+col1, col2 = st.columns(2)
 
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+# Create a container for the chatbot in the first column
+with col1:
+    st.markdown('<div class="chatbot-container">', unsafe_allow_html=True)
+    st.title("💬 Chatbot")
 
-# Display messages in the chatbot section
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
-if prompt := st.chat_input():
-    if not openai_api_key:
-        st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
-        st.stop()
+    # Display messages in the chatbot section
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
 
-    # Set the API key for the openai module
-    openai.api_key = openai_api_key
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user").write(prompt)
-    
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=st.session_state.messages
-    )
-    
-    msg = response.choices[0].message['content']
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write(msg)
+    if prompt := st.chat_input():
+        if not openai_api_key:
+            st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
+            st.stop()
 
-st.markdown('</div>', unsafe_allow_html=True)
+        # Set the API key for the openai module
+        openai.api_key = openai_api_key
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.chat_message("user").write(prompt)
+        
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=st.session_state.messages
+        )
+        
+        msg = response.choices[0].message['content']
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)
 
-# Create a container for the contact form
-st.markdown('<div class="contact-form-container">', unsafe_allow_html=True)
-st.title("📧 Contact Form")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-contact_form = st.form(key="contact_form")
-name = contact_form.text_input("Name")
-email = contact_form.text_input("Email")
-message = contact_form.text_area("Message")
-submit_button = contact_form.form_submit_button("Submit")
+# Create a container for the contact form in the second column
+with col2:
+    st.markdown('<div class="contact-form-container">', unsafe_allow_html=True)
+    st.title("📧 Contact Form")
 
-if submit_button:
-    st.success("Form submitted successfully!")
-    # Add your form submission logic here
+    contact_form = st.form(key="contact_form")
+    name = contact_form.text_input("Name")
+    email = contact_form.text_input("Email")
+    message = contact_form.text_area("Message")
+    submit_button = contact_form.form_submit_button("Submit")
 
-st.markdown('</div>', unsafe_allow_html=True)
+    if submit_button:
+        st.success("Form submitted successfully!")
+        # Add your form submission logic here
+
+    st.markdown('</div>', unsafe_allow_html=True)
