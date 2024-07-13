@@ -524,29 +524,14 @@ def create_chatbot(last_reports):
     st.header("AI Assistant")
     
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "assistant", "content": "How can I assist you with your maritime reporting?"}]
 
-    # Create a container for the chat messages
-    chat_container = st.container()
+    # Display messages
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"]).write(msg["content"])
 
-    # Create a container for the input box
-    input_container = st.container()
-
-    # Display messages in the chat container
-    with chat_container:
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # Display the input box in the input container
-    with input_container:
-        st.markdown('<div class="chat-input">', unsafe_allow_html=True)
-        prompt = st.chat_input("How can I assist you with your maritime reporting?")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    if prompt:
+    # Chat input
+    if prompt := st.chat_input("Enter your message"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         response = get_ai_response(prompt, last_reports)
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -562,6 +547,7 @@ def create_chatbot(last_reports):
                     st.warning(f"Invalid report sequence. {report_type} cannot follow the previous reports.")
         
         st.experimental_rerun()
+
 
 def is_valid_report_sequence(last_reports, new_report):
     if not last_reports:
@@ -615,7 +601,7 @@ def main():
         create_chatbot(st.session_state.report_history)
         
         if st.button("Clear Chat"):
-            st.session_state.messages = []
+            st.session_state.messages = [{"role": "assistant", "content": "How can I assist you with your maritime reporting?"}]
             st.session_state.current_report_type = None
             st.session_state.report_history = []
             st.experimental_rerun()
