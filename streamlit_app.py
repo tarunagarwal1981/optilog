@@ -7,18 +7,18 @@ openai_api_key = st.secrets["OPENAI_API_KEY"]
 # Add custom CSS to position the chatbot on the right 30% of the page
 st.markdown("""
     <style>
-        .left-container {
-            width: 70%;
-            float: left;
+        .container {
+            display: flex;
+            justify-content: flex-end;
         }
-        .right-container {
+        .chatbot {
             width: 30%;
-            float: right;
         }
     </style>
-    <div class="left-container"></div>
-    <div class="right-container">
-        <h1>💬 Chatbot</h1>
+    <div class="container">
+        <div class="chatbot">
+            <h1>💬 Chatbot</h1>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
