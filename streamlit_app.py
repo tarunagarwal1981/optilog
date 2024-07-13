@@ -24,59 +24,30 @@ st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting Sys
 # Custom CSS for compact layout, history panel, and field prompts
 st.markdown("""
 <style>
+    /* ... (keep existing styles) ... */
+    
     .reportSection { padding-right: 1rem; }
-    .chatSection { padding-left: 1rem; border-left: 1px solid #e0e0e0; }
-    .stButton > button { width: 100%; }
-    .main .block-container { padding-top: 2rem; padding-bottom: 2rem; max-width: 100%; }
-    h1, h2, h3 { margin-top: 0; font-size: 1.5em; line-height: 1.3; padding: 0.5rem 0; }
-    .stAlert { margin-top: 1rem; }
-    .stNumberInput, .stTextInput, .stSelectbox { 
-        padding-bottom: 0.5rem !important; 
+    .chatSection { 
+        padding-left: 1rem; 
+        border-left: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
     }
-    .stNumberInput input, .stTextInput input, .stSelectbox select {
-        padding: 0.3rem !important;
-        font-size: 0.9em !important;
+    .chat-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 1rem;
+        margin-bottom: 1rem;
     }
-    .stExpander { 
-        border: none !important; 
-        box-shadow: none !important;
-        margin-bottom: 0.5rem !important;
+    .chat-input {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        padding: 1rem 0;
     }
-    .history-panel {
-        background-color: #f1f1f1;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        max-width: 300px;
-    }
-    .history-panel h3 {
-        margin-top: 0;
-        margin-bottom: 10px;
-    }
-    .history-select {
-        margin-bottom: 5px;
-    }
-    .field-prompt {
-        font-size: 0.8em;
-        color: #666;
-        margin-bottom: 2px;
-    }
-    .small-warning {
-        font-size: 8px;
-        color: #b20000;
-        background-color: #ffe5e5;
-        border-radius: 5px;
-        padding: 5px;
-    }
-    .info-message {
-        font-size: 12px;
-        color: #0066cc;
-        background-color: #e6f2ff;
-        padding: 5px;
-        border-radius: 3px;
-        margin-top: 5px;
-        margin-bottom: 10px;
-        display: inline-block;
+    .stChatMessage {
+        padding: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -452,11 +423,27 @@ def create_chatbot(last_reports):
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    # Create a container for the chat messages
+    chat_container = st.container()
 
-    if prompt := st.chat_input("How can I assist you with your maritime reporting?"):
+    # Create a container for the input box
+    input_container = st.container()
+
+    # Display messages in the chat container
+    with chat_container:
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Display the input box in the input container
+    with input_container:
+        st.markdown('<div class="chat-input">', unsafe_allow_html=True)
+        prompt = st.chat_input("How can I assist you with your maritime reporting?")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         response = get_ai_response(prompt, last_reports)
         st.session_state.messages.append({"role": "assistant", "content": response})
@@ -533,4 +520,4 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    main()    
+    main()
