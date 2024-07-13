@@ -24,24 +24,37 @@ st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting Sys
 # Updated CSS
 st.markdown("""
 <style>
+    .main .block-container {
+        max-width: 100%;
+        padding-top: 1rem;
+        padding-right: 1rem;
+        padding-left: 1rem;
+        padding-bottom: 1rem;
+    }
     .reportSection { 
-        width: 70%;
+        width: 68%;
         float: left;
-        padding-right: 20px;
+        padding-right: 1%;
     }
     .chatSection { 
         width: 30%;
         float: right;
-        height: 100vh;
+        height: calc(100vh - 80px);
         overflow-y: auto;
-        padding-left: 20px;
+        padding-left: 1%;
         border-left: 1px solid #e0e0e0;
+        position: relative;
+    }
+    .chat-messages {
+        height: calc(100% - 70px);
+        overflow-y: auto;
+        padding-bottom: 70px;
     }
     .stChatFloatingInputContainer {
-        position: fixed;
+        position: absolute;
         bottom: 0;
+        left: 0;
         right: 0;
-        width: 30%;
         background-color: #0E1117;
         padding: 1rem;
         z-index: 1000;
@@ -57,8 +70,12 @@ st.markdown("""
     .stChatMessage [data-testid="chatAvatarIcon-assistant"] {
         background-color: #FFA500 !important;
     }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
+
 
 # Set up OpenAI API key
 try:
@@ -426,7 +443,7 @@ def create_collapsible_history_panel():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def create_chatbot(last_reports):
-    st.header("AI Assistant")
+    st.markdown('<div class="chat-messages">', unsafe_allow_html=True)
     
     if "messages" not in st.session_state:
         st.session_state.messages = [{"role": "assistant", "content": "How can I assist you with your maritime reporting?"}]
@@ -434,6 +451,8 @@ def create_chatbot(last_reports):
     # Display messages
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Chat input
     if prompt := st.chat_input("Enter your message"):
@@ -501,6 +520,7 @@ def main():
 
     with col2:
         st.markdown('<div class="chatSection">', unsafe_allow_html=True)
+        st.subheader("AI Assistant")
         create_collapsible_history_panel()
         create_chatbot(st.session_state.report_history)
         
