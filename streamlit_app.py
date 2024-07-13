@@ -11,7 +11,7 @@ openai_api_key = st.secrets['OPENAI_API_KEY']
 os.environ['OPENAI_API_KEY'] = openai_api_key
 
 # Now import OpenAI after setting the API key
-from openai import OpenAI
+import OpenAI
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
