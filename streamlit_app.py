@@ -1,9 +1,14 @@
 import streamlit as st
 import openai
 
+# Get the OpenAI API key from Streamlit secrets
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+
 with st.sidebar:
-    openai_api_key = st.secrets["OPENAI_API_KEY"]
-    
+    "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
+    "[View the source code](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
+    "[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)"
+
 st.title("💬 Chatbot")
 
 if "messages" not in st.session_state:
@@ -14,7 +19,7 @@ for msg in st.session_state.messages:
 
 if prompt := st.chat_input():
     if not openai_api_key:
-        st.info("Please add your OpenAI API key to continue.")
+        st.info("OpenAI API key not found. Please add your API key to the Streamlit secrets.")
         st.stop()
 
     client = OpenAI(api_key=openai_api_key)
