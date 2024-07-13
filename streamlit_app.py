@@ -1,13 +1,10 @@
 import streamlit as st
 import openai
-import os
 
-# Use streamlit's secrets management for the OpenAI API key
+# Check if the API key is set in the secrets
 if 'OPENAI_API_KEY' not in st.secrets:
     st.error("OPENAI_API_KEY is not set in the secrets. Please set it and restart the app.")
     st.stop()
-
-openai_api_key = st.secrets['OPENAI_API_KEY']
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
@@ -49,7 +46,8 @@ def create_chatbot():
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
     if prompt := st.chat_input():
-        client = OpenAI(api_key=openai_api_key)
+        # Access the API key from st.secrets
+        client = OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
