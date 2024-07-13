@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import openai
+import openai
 import os
 
 # Use streamlit's secrets management for the OpenAI API key
