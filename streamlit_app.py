@@ -1,7 +1,6 @@
 import streamlit as st
+from openai import openai
 import os
-from datetime import datetime
-import openai
 
 # Use streamlit's secrets management for the OpenAI API key
 if 'OPENAI_API_KEY' not in st.secrets:
@@ -9,9 +8,6 @@ if 'OPENAI_API_KEY' not in st.secrets:
     st.stop()
 
 openai_api_key = st.secrets['OPENAI_API_KEY']
-os.environ['OPENAI_API_KEY'] = openai_api_key
-
-# Now import OpenAI after setting the API key
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
@@ -47,19 +43,15 @@ def create_noon_report_form():
             st.write(form_data)
 
 def create_chatbot():
-    st.header("AI Assistant")
-    
+    st.title("💬 Chatbot")
     if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you with your maritime reporting?"}]
-    
+        st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
     for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
-    
-    if prompt := st.chat_input("Type your message here..."):
-        client = OpenAI()
+    if prompt := st.chat_input():
+        client = OpenAI(api_key=openai_api_key)
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
-        
         response = client.chat.completions.create(model="gpt-3.5-turbo", messages=st.session_state.messages)
         msg = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": msg})
