@@ -1,6 +1,9 @@
 import streamlit as st
 import openai
 
+# Set page config at the very beginning
+st.set_page_config(layout="wide", page_title="Maritime Reporting System")
+
 # Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
@@ -94,9 +97,7 @@ def create_chatbot():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def main():
-    st.set_page_config(layout="wide", page_title="Maritime Reporting System")
     st.title("Maritime Reporting System")
-
     create_noon_report_form()
     create_chatbot()
 
