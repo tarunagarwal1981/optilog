@@ -22,6 +22,7 @@ VESSEL_NAMES = ["Horizon", "Voyager", "Pioneer", "Adventurer", "Explorer", "Disc
 st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting System")
 
 # Custom CSS for compact layout, history panel, and field prompts
+st.markdown("""
 <style>
     /* General layout styles */
     .reportSection { 
@@ -154,6 +155,7 @@ st.set_page_config(layout="wide", page_title="AI-Enhanced Maritime Reporting Sys
         background: #555;
     }
 </style>
+""", unsafe_allow_html=True)
 
 # Set up OpenAI API key
 try:
