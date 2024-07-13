@@ -4,10 +4,22 @@ import openai
 # Get the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
-# Add the chatbot to the right 30% space
+# Add custom CSS to position the chatbot on the right 30% of the page
 st.markdown("""
-<div style="width: 30%; float: right;">
-    <h1>💬 Chatbot</h1>
+    <style>
+        .left-container {
+            width: 70%;
+            float: left;
+        }
+        .right-container {
+            width: 30%;
+            float: right;
+        }
+    </style>
+    <div class="left-container"></div>
+    <div class="right-container">
+        <h1>💬 Chatbot</h1>
+    </div>
 """, unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
@@ -36,4 +48,3 @@ if prompt := st.chat_input():
     msg = response.choices[0].message['content']
     st.session_state.messages.append({"role": "assistant", "content": msg})
     st.chat_message("assistant").write(msg)
-st.markdown('</div>', unsafe_allow_html=True)
