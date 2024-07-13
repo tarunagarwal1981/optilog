@@ -1,6 +1,17 @@
 import streamlit as st
+import os
+from datetime import datetime
+
+# Use streamlit's secrets management for the OpenAI API key
+if 'OPENAI_API_KEY' not in st.secrets:
+    st.error("OPENAI_API_KEY is not set in the secrets. Please set it and restart the app.")
+    st.stop()
+
+openai_api_key = st.secrets['OPENAI_API_KEY']
+os.environ['OPENAI_API_KEY'] = openai_api_key
+
+# Now import OpenAI after setting the API key
 from openai import OpenAI
-import datetime
 
 # Define the structure for the noon report form
 NOON_REPORT_FIELDS = [
@@ -45,11 +56,7 @@ def create_chatbot():
         st.chat_message(msg["role"]).write(msg["content"])
     
     if prompt := st.chat_input("Type your message here..."):
-        if not openai_api_key:
-            st.info("Please add your OpenAI API key to continue.")
-            st.stop()
-        
-        client = OpenAI(api_key=openai_api_key)
+        client = OpenAI()
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         
@@ -62,11 +69,6 @@ def main():
     st.set_page_config(layout="wide")
     st.title("Maritime Reporting System")
 
-    # Sidebar for OpenAI API Key
-    with st.sidebar:
-        openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
-        "[Get an OpenAI API key](https://platform.openai.com/account/api-keys)"
-        
     # Create two columns: one for the form (70%) and one for the chatbot (30%)
     col1, col2 = st.columns([0.7, 0.3])
 
